@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: prism-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: prism_user
+      POSTGRES_PASSWORD: prism_secure_password
+      POSTGRES_DB: prism_ids_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U prism_user -d prism_ids_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: prism-server
+    restart: always
+    environment:
+      - POSTGRES_SERVER=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=prism_user
+      - POSTGRES_PASSWORD=prism_secure_password
+      - POSTGRES_DB=prism_ids_db
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  dashboard:
+    build:
+      context: ./prism-dashboard
+      dockerfile: Dockerfile
+    container_name: prism-dashboard
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - server
+
+  agent:
+    build:
+      context: ./prism-agent
+      dockerfile: Dockerfile
+    container_name: prism-agent
+    restart: always
+    network_mode: "host"
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    environment:
+      - SERVER_URL=http://localhost:8000
+
+volumes:
+  pgdata:

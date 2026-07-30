@@ -1,0 +1,81 @@
+[
+  {
+    "rule_id": "SIG-001",
+    "name": "Port Scanning Activity Detected",
+    "description": "High rate of connection attempts with small packet sizes across destination ports",
+    "severity": "HIGH",
+    "protocol": "ANY",
+    "enabled": true,
+    "conditions": {
+      "min_packets": 5,
+      "max_bytes_per_pkt": 120.0,
+      "min_packets_per_sec": 20.0
+    },
+    "action": "ALERT"
+  },
+  {
+    "rule_id": "SIG-002",
+    "name": "TCP SYN Flood Indicator",
+    "description": "High proportion of SYN packets with low ACK responses indicating SYN flooding",
+    "severity": "CRITICAL",
+    "protocol": "TCP",
+    "enabled": true,
+    "conditions": {
+      "min_syn_ratio": 0.8,
+      "max_ack_ratio": 0.2,
+      "min_packets": 10
+    },
+    "action": "ALERT"
+  },
+  {
+    "rule_id": "SIG-003",
+    "name": "ICMP Flood Attack",
+    "description": "Excessive ICMP ping request volume",
+    "severity": "HIGH",
+    "protocol": "ICMP",
+    "enabled": true,
+    "conditions": {
+      "min_packets_per_sec": 50.0
+    },
+    "action": "ALERT"
+  },
+  {
+    "rule_id": "SIG-004",
+    "name": "DNS Amplification Reflection",
+    "description": "Disproportionate backward response bytes over UDP DNS port 53",
+    "severity": "HIGH",
+    "protocol": "UDP",
+    "enabled": true,
+    "conditions": {
+      "dst_port": 53,
+      "min_fwd_bwd_byte_ratio_inv": 5.0
+    },
+    "action": "ALERT"
+  },
+  {
+    "rule_id": "SIG-005",
+    "name": "Brute Force Connection Pattern",
+    "description": "Repeated connection attempts to remote access ports (SSH, RDP, FTP)",
+    "severity": "MEDIUM",
+    "protocol": "TCP",
+    "enabled": true,
+    "conditions": {
+      "target_ports": [21, 22, 3389],
+      "min_packets": 15,
+      "max_duration": 5.0
+    },
+    "action": "ALERT"
+  },
+  {
+    "rule_id": "SIG-006",
+    "name": "High Connection Rate Burst",
+    "description": "Extreme packet volume per second exceeding normal baseline",
+    "severity": "MEDIUM",
+    "protocol": "ANY",
+    "enabled": true,
+    "conditions": {
+      "min_packets_per_sec": 200.0
+    },
+    "action": "ALERT"
+  }
+]

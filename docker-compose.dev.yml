@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: prism_postgres_dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: prism_user
+      POSTGRES_PASSWORD: prism_secure_password
+      POSTGRES_DB: prism_ids_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U prism_user -d prism_ids_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  prism-server-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: prism_server_dev
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    environment:
+      APP_NAME: "PRISM IDS Server (Dev)"
+      ENVIRONMENT: "development"
+      DEBUG: "true"
+      DATABASE_URL: "postgresql+asyncpg://prism_user:prism_secure_password@postgres:5432/prism_ids_db"
+      JWT_SECRET: "prism_dev_secret_key_change_in_production_32bytes_minimum_length"
+      LOG_LEVEL: "DEBUG"
+    volumes:
+      - .:/app
+
+volumes:
+  postgres_dev_data:

@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  prism-agent:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.agent
+    container_name: prism_agent_node
+    restart: always
+    environment:
+      AGENT_NAME: "docker-sensor-node-01"
+      SERVER_URL: "http://prism_server:8000"
+      WS_URL: "ws://prism_server:8000/ws/v1/connect"
+      HEARTBEAT_INTERVAL: "15"
+      LOG_LEVEL: "INFO"
+    volumes:
+      - agent_credentials:/app
+      - agent_logs:/app/logs
+
+volumes:
+  agent_credentials:
+  agent_logs:
