@@ -6,7 +6,7 @@ from passlib.context import CryptContext
 from app.core.config import settings
 from app.core.exceptions import AuthenticationError
 
-pwd_context = CryptContext(schemes=["bcrypt", "argon2"], deprecated="auto")
+pwd_context = CryptContext(schemes=["pbkdf2_sha256", "bcrypt"], deprecated="auto")
 
 
 def hash_password(password: str) -> str:
