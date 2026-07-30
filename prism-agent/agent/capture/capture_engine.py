@@ -45,7 +45,7 @@ class CaptureEngine:
             queue_max_size=self.queue.maxsize,
         )
 
-    def start(() -> None:
+    def start(self) -> None:
         """Start packet acquisition."""
         if not self._is_initialized:
             self.initialize()
