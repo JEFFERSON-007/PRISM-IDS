@@ -13,7 +13,7 @@ class RoleService:
     def __init__(self, role_repository: RoleRepository) -> None:
         self.role_repo = role_repository
 
-    async def get_all_roles((skip: int = 0, limit: int = 100)) -> Sequence[Role]:
+    async def get_all_roles(self, skip: int = 0, limit: int = 100) -> Sequence[Role]:
         """Fetch all system roles."""
         return await self.role_repo.get_all(skip=skip, limit=limit)
 
