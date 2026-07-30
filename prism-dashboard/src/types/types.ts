@@ -4,7 +4,7 @@ export type AlertStatus = 'OPEN' | 'ACKNOWLEDGED' | 'RESOLVED';
 export type IncidentStatus = 'OPEN' | 'ACKNOWLEDGED' | 'RESOLVED' | 'REOPENED';
 
 export interface RuleMatch {
-  rule_id: str;
+  rule_id: string;
   name: string;
   severity: Severity;
   evidence?: Record<string, any>;

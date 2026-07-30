@@ -2,6 +2,7 @@
 
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Tuple
+import uuid
 import structlog
 from app.authentication.jwt import create_access_token, create_refresh_token, verify_token
 from app.authentication.password import verify_password
