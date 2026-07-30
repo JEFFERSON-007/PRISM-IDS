@@ -8,11 +8,10 @@ class PromptBuilder:
     """Renders structured security prompts for LLM inference."""
 
     SYSTEM_SECURITY_ANALYST_PROMPT = (
-        "You are an elite AI Security Analyst working in a Security Operations Center (SOC). "
-        "Your duty is to explain network security alerts, assess risks, map threat vectors to MITRE ATT&CK, "
-        "and provide actionable remediation advice to human SOC analysts. "
-        "Base your analysis strictly on the provided structured IDS alert telemetry. "
-        "Do NOT invent unverified facts. Return your response in valid JSON matching the specified structure."
+        "You are a Senior SOC Level-3 Cybersecurity Analyst. "
+        "The attack has already been detected. "
+        "Never decide whether traffic is malicious. "
+        "Your role is only to explain and recommend."
     )
 
     @staticmethod
@@ -34,10 +33,10 @@ Please generate a JSON object with the following exact keys:
   "false_positive_indicators": ["List of indicators suggesting a potential false positive"],
   "mitre_attack_mapping": [
     {{
-      "tactic": "Reconnaissance or Impact or Initial Access",
-      "technique_id": "T1046",
-      "technique_name": "Network Service Discovery",
-      "description": "Explanation of mapping"
+      "tactic": "Reconnaissance or Credential Access or Initial Access or Impact",
+      "technique_id": "T1110 or T1190 or T1046",
+      "technique_name": "Brute Force or Exploit Public-Facing Application or Network Service Discovery",
+      "description": "Short explanation of mapping"
     }}
   ],
   "remediation_actions": [
@@ -47,6 +46,10 @@ Please generate a JSON object with the following exact keys:
       "title": "Block Source IP on Perimeter Firewall",
       "details": "Command or rule details"
     }}
+  ],
+  "investigation_steps": [
+    "Step 1: Check firewall logs for additional source IP traffic.",
+    "Step 2: Inspect target host for file modifications."
   ]
 }}
 """
@@ -72,4 +75,44 @@ Please generate a JSON object with the following exact keys:
 {user_query}
 
 Provide a helpful, precise, and professional SOC answer based on the security context provided.
+"""
+
+    @staticmethod
+    def build_executive_report_prompt(incidents_summary: Dict[str, Any], alerts_summary: Dict[str, Any], network_summary: Dict[str, Any]) -> str:
+        """Render prompt requesting structured JSON executive security report."""
+        incidents_str = json.dumps(incidents_summary, indent=2)
+        alerts_str = json.dumps(alerts_summary, indent=2)
+        network_str = json.dumps(network_summary, indent=2)
+
+        return f"""Generate an Executive SOC Security Report for organizational leadership based on the following telemetry summaries.
+
+[INCIDENTS TELEMETRY]
+{incidents_str}
+
+[ALERTS TELEMETRY]
+{alerts_str}
+
+[NETWORK & AGENT METRICS]
+{network_str}
+
+Please generate a JSON object with the following exact keys:
+{{
+  "executive_summary": "High-level summary of security posture, active threats, and key metrics.",
+  "top_attacks": [
+    {{"attack_type": "Port Scanning", "count": 42, "severity": "HIGH"}}
+  ],
+  "most_targeted_assets": [
+    {{"destination_ip": "10.0.0.1", "alert_count": 15, "highest_severity": "CRITICAL"}}
+  ],
+  "common_mitre_techniques": [
+    {{"technique_id": "T1046", "technique_name": "Network Service Discovery", "count": 25}}
+  ],
+  "risk_trends": [
+    {{"metric": "Average Risk Score", "value": "68.4", "status": "STABLE"}}
+  ],
+  "recommendations": [
+    "Implement perimeter rate-limiting for ICMP/SYN sweeps",
+    "Isolate untrusted agent subnets"
+  ]
+}}
 """

@@ -10,6 +10,7 @@ from fastapi.openapi.utils import get_openapi
 from fastapi.responses import HTMLResponse
 import structlog
 
+from app.api.ai_routes import router as ai_router
 from app.api.v1.endpoints.websocket import router as ws_router
 from app.api.v1.router import api_v1_router
 from app.core.config import settings
@@ -89,6 +90,7 @@ def create_application() -> FastAPI:
 
     # Mount API Routers
     app.include_router(api_v1_router, prefix=settings.API_V1_STR)
+    app.include_router(ai_router)
     app.include_router(ws_router)
 
     # Custom Swagger UI Endpoint

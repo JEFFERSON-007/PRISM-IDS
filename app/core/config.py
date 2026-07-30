@@ -89,14 +89,23 @@ class Settings(BaseSettings):
     )
 
     # LLM / Ollama AI Analyst Settings
+    OLLAMA_URL: str = Field(
+        default="http://localhost:11434", description="Ollama service URL"
+    )
     OLLAMA_BASE_URL: str = Field(
-        default="http://localhost:11434", description="Ollama local LLM API service URL"
+        default="http://localhost:11434", description="Alias for Ollama service URL"
     )
     OLLAMA_MODEL: str = Field(
-        default="qwen:3b", description="Target LLM model identifier (e.g. qwen:3b, llama3.2)"
+        default="qwen2.5:3b", description="Target LLM model identifier (qwen2.5:3b)"
+    )
+    OLLAMA_TIMEOUT: int = Field(
+        default=30, description="Timeout in seconds for Ollama LLM requests"
     )
     OLLAMA_TIMEOUT_SECONDS: int = Field(
-        default=30, description="Timeout in seconds for LLM inference HTTP requests"
+        default=30, description="Alias for Ollama request timeout"
+    )
+    OLLAMA_STREAM: bool = Field(
+        default=False, description="Enable streaming mode by default for chat"
     )
     LLM_ENABLED: bool = Field(
         default=True, description="Master toggle for AI Security Analyst LLM integration"
