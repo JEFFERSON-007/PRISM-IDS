@@ -18,7 +18,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pytest pytest-asyncio pyjwt httpx fastapi sqlalchemy asyncpg alembic pydantic pydantic-settings email-validator python-jose passlib structlog psutil jinja2
+          pip install pytest pytest-asyncio pytest-cov pyjwt httpx fastapi sqlalchemy asyncpg alembic pydantic pydantic-settings email-validator python-jose passlib structlog psutil jinja2
       - name: Run Server Unit Tests
         run: |
           PYTHONPATH=. pytest tests/unit/
@@ -35,7 +35,7 @@ jobs:
         run: |
           cd prism-agent
           python -m pip install --upgrade pip
-          pip install pytest pytest-asyncio websockets scapy httpx pydantic pydantic-settings structlog psutil scikit-learn joblib
+          pip install pytest pytest-asyncio pytest-cov websockets scapy httpx pydantic pydantic-settings structlog psutil scikit-learn joblib
       - name: Run Agent Unit Tests
         run: |
           cd prism-agent
