@@ -59,7 +59,7 @@ class CaptureStatistics:
             return 0.0
         return round(self.packets_captured / dur, 2)
 
-    def get_summary((self)) -> Dict[str, Any]:
+    def get_summary(self) -> Dict[str, Any]:
         """Return snapshot summary of metrics."""
         return {
             "packets_captured": self.packets_captured,
