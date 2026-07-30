@@ -20,9 +20,9 @@ class PacketProtocol(str, Enum):
 class EthernetHeader(BaseModel):
     """Ethernet Data Link layer header details."""
 
-    src_mac: str = Field(description="Source MAC Address")
-    dst_mac: str = Field(description="Destination MAC Address")
-    ethertype: int = Field(description="Ethernet Type Code (e.g. 0x0800 for IPv4)")
+    src_mac: str = Field(default="00:00:00:00:00:00", description="Source MAC Address")
+    dst_mac: str = Field(default="00:00:00:00:00:00", description="Destination MAC Address")
+    ethertype: int = Field(default=0x0800, description="Ethernet Type Code (e.g. 0x0800 for IPv4)")
 
 
 class IPHeader(BaseModel):
@@ -33,7 +33,7 @@ class IPHeader(BaseModel):
     version: int = Field(description="IP Version (4 or 6)")
     ttl: int = Field(description="Time to Live / Hop Limit")
     protocol_number: int = Field(description="IP Protocol Number (6=TCP, 17=UDP, 1=ICMP)")
-    length: int = Field(description="Total Packet Length in bytes")
+    length: int = Field(default=0, description="Total Packet Length in bytes")
     id: Optional[int] = Field(default=None, description="IP Identification Field")
 
 
@@ -64,7 +64,7 @@ class UDPHeader(BaseModel):
 
     src_port: int = Field(ge=0, le=65535)
     dst_port: int = Field(ge=0, le=65535)
-    length: int = Field(description="UDP Datagram Length")
+    length: int = Field(default=0, description="UDP Datagram Length")
 
 
 class ICMPHeader(BaseModel):

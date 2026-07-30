@@ -40,9 +40,9 @@ class PacketParser:
             if packet.haslayer("Ether"):
                 eth_layer = packet.getlayer("Ether")
                 eth_header = EthernetHeader(
-                    src_mac=eth_layer.src,
-                    dst_mac=eth_layer.dst,
-                    ethertype=eth_layer.type,
+                    src_mac=getattr(eth_layer, "src", "00:00:00:00:00:00") or "00:00:00:00:00:00",
+                    dst_mac=getattr(eth_layer, "dst", "00:00:00:00:00:00") or "00:00:00:00:00:00",
+                    ethertype=int(getattr(eth_layer, "type", 0x0800) or 0x0800),
                 )
 
             # IP Layer (v4 / v6)
@@ -51,24 +51,30 @@ class PacketParser:
 
             if packet.haslayer("IP"):
                 ip = packet.getlayer("IP")
+                ip_len = getattr(ip, "len", None)
+                if ip_len is None:
+                    ip_len = len(ip)
                 ip_header = IPHeader(
                     src_ip=ip.src,
                     dst_ip=ip.dst,
                     version=4,
-                    ttl=ip.ttl,
-                    protocol_number=ip.proto,
-                    length=ip.len,
-                    id=ip.id,
+                    ttl=getattr(ip, "ttl", 64),
+                    protocol_number=getattr(ip, "proto", 6),
+                    length=int(ip_len),
+                    id=getattr(ip, "id", None),
                 )
             elif packet.haslayer("IPv6"):
                 ip6 = packet.getlayer("IPv6")
+                plen = getattr(ip6, "plen", None)
+                if plen is None:
+                    plen = len(ip6)
                 ip_header = IPHeader(
                     src_ip=ip6.src,
                     dst_ip=ip6.dst,
                     version=6,
-                    ttl=ip6.hlim,
-                    protocol_number=ip6.nh,
-                    length=ip6.plen,
+                    ttl=getattr(ip6, "hlim", 64),
+                    protocol_number=getattr(ip6, "nh", 6),
+                    length=int(plen),
                     id=None,
                 )
 
@@ -92,18 +98,21 @@ class PacketParser:
                 tcp_header = TCPHeader(
                     src_port=tcp.sport,
                     dst_port=tcp.dport,
-                    seq=tcp.seq,
-                    ack=tcp.ack,
+                    seq=getattr(tcp, "seq", 0),
+                    ack=getattr(tcp, "ack", None),
                     flags=tcp_flags,
-                    window=tcp.window,
+                    window=getattr(tcp, "window", 8192),
                 )
             elif packet.haslayer("UDP"):
                 proto_enum = PacketProtocol.UDP
                 udp = packet.getlayer("UDP")
+                udp_len = getattr(udp, "len", None)
+                if udp_len is None:
+                    udp_len = len(udp)
                 udp_header = UDPHeader(
                     src_port=udp.sport,
                     dst_port=udp.dport,
-                    length=udp.len,
+                    length=int(udp_len),
                 )
             elif packet.haslayer("ICMP"):
                 proto_enum = PacketProtocol.ICMP

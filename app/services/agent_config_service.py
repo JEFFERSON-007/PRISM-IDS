@@ -1,5 +1,6 @@
 """Agent Configuration Management Service."""
 
+from typing import Optional
 import uuid
 from app.core.exceptions import NotFoundError
 from app.models.agent_config import AgentConfiguration
