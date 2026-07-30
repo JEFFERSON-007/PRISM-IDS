@@ -44,6 +44,10 @@ async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
             await session.close()
 
 
+# Alias for dependency injection compatibility
+get_db = get_db_session
+
+
 async def check_database_health() -> Dict[str, Any]:
     """Perform connection health check and measure round-trip latency."""
     start_time = time.perf_counter()

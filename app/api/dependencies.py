@@ -11,7 +11,7 @@ from app.authentication.permissions import Permission as PermissionEnum, has_per
 from app.authentication.roles import Role as RoleEnum
 from app.core.config import Settings, settings
 from app.core.exceptions import AuthenticationError, PermissionDeniedError
-from app.database.session import get_db_session
+from app.database.session import get_db_session, get_db
 from app.models.agent import Agent
 from app.models.user import User
 from app.repositories.agent_config_repository import AgentConfigRepository
