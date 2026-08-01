@@ -14,6 +14,7 @@ class DetectionStatistics:
         self.detections_generated: int = 0
         self.rule_matches_count: int = 0
         self.ml_positives_count: int = 0
+        self.dropped_count: int = 0
         self.total_processing_time_ms: float = 0.0
         self.error_count: int = 0
 
@@ -30,6 +31,23 @@ class DetectionStatistics:
         """Record a processed feature vector."""
         self.vectors_processed += 1
         self.total_processing_time_ms += duration_ms
+
+    def record_evaluation(self, duration_ms: float) -> None:
+        """Alias for record_processed."""
+        self.record_processed(duration_ms)
+
+    def record_signature_hit(self) -> None:
+        """Record a signature rule match hit."""
+        self.rule_matches_count += 1
+        self.detections_generated += 1
+
+    def record_ml_hit(self) -> None:
+        """Record a Machine Learning model positive hit."""
+        self.ml_positives_count += 1
+
+    def record_drop(self) -> None:
+        """Record a dropped detection result due to queue overflow."""
+        self.dropped_count += 1
 
     def record_detection(self, rule_count: int, is_ml_positive: bool) -> None:
         """Record a generated detection result."""
@@ -65,13 +83,14 @@ class DetectionStatistics:
             return 0.0
         return round(self.total_processing_time_ms / self.vectors_processed, 3)
 
-    def get_summary(self, queue_size: int) -> Dict[str, Any]:
+    def get_summary(self, queue_size: int = 0) -> Dict[str, Any]:
         """Return metric snapshot summary."""
         return {
             "vectors_processed": self.vectors_processed,
             "detections_generated": self.detections_generated,
             "rule_matches_count": self.rule_matches_count,
             "ml_positives_count": self.ml_positives_count,
+            "dropped_count": self.dropped_count,
             "processing_rate_vps": self.processing_rate_vps,
             "avg_processing_time_ms": self.avg_processing_time_ms,
             "queue_size": queue_size,

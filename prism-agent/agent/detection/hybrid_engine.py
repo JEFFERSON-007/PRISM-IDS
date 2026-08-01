@@ -122,5 +122,5 @@ class HybridEngine:
             "queue_size": self.output_queue.size,
             "signature_engine_ready": True,
             "ml_engine_ready": self.ml_engine.is_available,
-            "statistics": self.statistics.get_summary(),
+            "statistics": self.statistics.get_summary(self.output_queue.size),
         }
