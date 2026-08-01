@@ -15,7 +15,7 @@
 
 *An Enterprise-Grade, Real-Time Intrusion Detection System & Security Operations Center (SOC) Platform powered by Hybrid Signature + ML Detection Engines, Scapy Network Sensors, and Local Ollama AI Security Analyst (`qwen2.5:3b`).*
 
-[Architecture](#-system-architecture) • [Features](#-key-features) • [Quick Start](#-quick-start) • [AI Analyst](#-ai-security-analyst-ollama) • [API Surface](#-api-reference) • [Documentation](#-documentation-suite)
+[Architecture](#-system-architecture) • [Features](#-key-features) • [Deployment & Launch](#-getting-started--deployment) • [AI Analyst](#-ai-security-analyst-ollama) • [Troubleshooting](#-troubleshooting--faq) • [Documentation](#-documentation-suite)
 
 </div>
 
@@ -92,30 +92,39 @@
 
 ---
 
-## ⚡ Quick Start
+## ⚡ Getting Started & Deployment
 
-### Prerequisites
-- [Docker & Docker Compose](https://www.docker.com/)
-- [Ollama](https://ollama.com/) (For local LLM security briefings)
+### System Prerequisites
+- **Git**: [git-scm.com](https://git-scm.com/)
+- **Python**: 3.12 or newer ([python.org](https://www.python.org/))
+- **Node.js**: 18.0 or newer ([nodejs.org](https://nodejs.org/))
+- **Docker Desktop**: Recommended for containerized deployment ([docker.com](https://www.docker.com/))
+- **Ollama**: Recommended for local LLM briefings ([ollama.com](https://ollama.com/))
 
-### 1. Clone & Set Up Environment
+---
+
+### 🐳 Method 1: Containerized Run (Docker Compose - Recommended for Any OS)
+
+This method runs PostgreSQL 16, FastAPI Backend, React SOC Dashboard, and Scapy Agent in Docker containers with a single command.
+
+#### 1. Start Docker Engine
+- **Windows / macOS**: Open **Docker Desktop** application from your menu and wait until the status indicator turns **Green ("Engine Running")**.
+- **Linux**: Ensure Docker daemon is running (`sudo systemctl start docker`).
+
+#### 2. Launch Stack
 ```bash
+# Clone the repository
 git clone https://github.com/JEFFERSON-007/PRISM-IDS.git
 cd PRISM-IDS
-```
 
-### 2. Install & Start Ollama LLM
-```bash
-# Pull the recommended qwen2.5:3b model
+# (Optional) Pull Ollama AI model locally
 ollama pull qwen2.5:3b
-```
 
-### 3. Launch PRISM IDS Stack via Docker Compose
-```bash
+# Launch all microservices
 docker-compose up --build -d
 ```
 
-### 4. Verify Services
+#### 3. Access Services
 | Service | URL | Description |
 | :--- | :--- | :--- |
 | **SOC Dashboard** | `http://localhost` | React 19 Frontend Dashboard |
@@ -123,6 +132,53 @@ docker-compose up --build -d
 | **Swagger API Docs** | `http://localhost:8000/docs` | Interactive OpenAPI Documentation |
 | **AI Analyst Health** | `http://localhost:8000/api/ai/health` | Ollama LLM Connection Status |
 | **WebSocket Stream** | `ws://localhost:8000/ws/v1/connect` | Live Event Streaming Endpoint |
+
+---
+
+### 💻 Method 2: Native Standalone Run (Local Terminal Windows)
+
+If you prefer to run services directly on your host machine without Docker containers:
+
+#### 1. Start Database (PostgreSQL 16)
+- **Option A (Docker database only)**: `docker-compose up -d postgres`
+- **Option B (Windows Native PostgreSQL)**: Ensure `postgresql-x64-16` service is running in Windows Services.
+
+#### 2. Start FastAPI Backend Server (Terminal 1)
+```bash
+# Navigate to project root
+cd PRISM-IDS
+
+# Install server dependencies
+python -m pip install -r requirements.txt
+
+# Start backend server
+python -m uvicorn app.main:app --reload --port 8000
+```
+
+#### 3. Start React SOC Dashboard (Terminal 2)
+```bash
+# Navigate to dashboard directory
+cd PRISM-IDS/prism-dashboard
+
+# Install frontend node packages
+npm.cmd install   # On Windows (or 'npm install' on Linux/macOS)
+
+# Launch Vite development server
+npm.cmd run dev   # On Windows (or 'npm run dev' on Linux/macOS)
+```
+*Open **http://localhost:5173** in your browser.*
+
+#### 4. Start IDS Agent Network Sensor (Terminal 3)
+```bash
+# Navigate to agent directory
+cd PRISM-IDS/prism-agent
+
+# Install agent dependencies
+python -m pip install -r requirements.txt
+
+# Run the agent daemon
+python -m agent.main
+```
 
 ---
 
@@ -205,6 +261,19 @@ Content-Type: application/json
   "top_limit": 5
 }
 ```
+
+---
+
+## 🔧 Troubleshooting & FAQ
+
+| Issue / Error | Root Cause | Solution |
+| :--- | :--- | :--- |
+| **`failed to connect to docker API... daemon not running`** | Docker Desktop application is closed. | Launch **Docker Desktop** from Windows Start Menu and wait until engine status turns green. |
+| **`Connect call failed ('127.0.0.1', 5432)`** | PostgreSQL database service is stopped. | Run `docker-compose up -d postgres` or start `postgresql-x64-16` in Windows Services. |
+| **`'vite' is not recognized as an internal command`** | Node packages not installed in `prism-dashboard`. | Run `npm.cmd install` (or `npm install`) inside `prism-dashboard` folder first. |
+| **`Select an app to open 'npm'` popup** | Windows file association for `.cmd` files. | Use `npm.cmd run dev` or `npx vite` in Windows Command Prompt/PowerShell. |
+| **`ModuleNotFoundError: No module named 'agent'`** | Python current directory import path issue. | Run `python -m agent.main` from inside the `prism-agent` directory. |
+| **`ollama: command not found`** | Ollama binary not installed on host. | Install from [ollama.com](https://ollama.com/). *Note: PRISM IDS automatically falls back to internal rules if Ollama is absent.* |
 
 ---
 
