@@ -15,7 +15,7 @@
 
 *An Enterprise-Grade, Real-Time Intrusion Detection System & Security Operations Center (SOC) Platform powered by Hybrid Signature + Scikit-Learn Random Forest ML Engines, Scapy Network Sensors, and Local Ollama AI Security Analyst (`qwen2.5:3b`).*
 
-[Architecture](#-system-architecture) • [User Windows App Guide](#-user-end-guide-windows-app-installation--configuration) • [Admin SOC Guide](#-admin-end-guide-central-soc-master) • [AI Analyst Role](#-ai-security-analyst-how-it-works--whats-its-use) • [Deployment](#-getting-started--deployment) • [Executable Build](#-standalone-windows-exe-agent-build) • [Troubleshooting](#-troubleshooting--faq)
+[Architecture](#-system-architecture) • [User Windows App Guide](#-user-end-guide-windows-app-installation) • [Admin SOC Guide](#-admin-end-guide-central-soc-master) • [AI Analyst Role](#-ai-security-analyst-how-it-works--whats-its-use) • [Deployment](#-getting-started--deployment) • [Executable Build](#-standalone-windows-exe-agent-build) • [Troubleshooting](#-troubleshooting--faq)
 
 </div>
 
@@ -27,72 +27,46 @@
 
 ---
 
-## 👨‍💻 USER-END GUIDE (Windows App Installation & Configuration)
+## 👨‍💻 USER-END GUIDE (Windows App Installation)
 
-The **User End App** (`prism-agent.exe`) is a lightweight standalone Windows executable installed on target computers, employee laptops, or servers that you want to monitor.
+The **User End App** (`prism-agent.exe`) is a zero-configuration, standalone Windows executable installed on target computers, employee laptops, or servers that you want to monitor.
 
-### 📥 1. Direct Download
-- **`prism-agent.exe`**: [Download Standalone Executable (GitHub Direct)](https://github.com/JEFFERSON-007/PRISM-IDS/raw/main/prism-agent/dist/prism-agent.exe)
-- **`.env.agent`**: [Download Configuration File](https://github.com/JEFFERSON-007/PRISM-IDS/raw/main/prism-agent/.env.agent)
+### 📥 1-Click Direct Download (Single Executable)
+- **`prism-agent.exe`**: [👉 Download Standalone Executable (70 MB GitHub Direct Link)](https://github.com/JEFFERSON-007/PRISM-IDS/raw/main/prism-agent/dist/prism-agent.exe)
+
+> ✨ **Zero Extra Files Required**: `prism-agent.exe` comes pre-configured out-of-the-box with embedded Python runtime, Scapy drivers, machine learning models, and pre-configured Central Server connectivity!
 
 ---
 
 ### 🚀 2. Step-by-Step Windows Installation Guide
 
-1. **Create Destination Folder**:
-   Create a dedicated folder on the target Windows computer (e.g. `C:\PRISM-Agent\`).
+1. **Download Executable**:
+   Download **`prism-agent.exe`** onto the target Windows computer.
 
-2. **Paste Downloaded Files**:
-   Copy both **`prism-agent.exe`** and **`.env.agent`** into `C:\PRISM-Agent\`.
-
-3. **Launch with Administrator Privileges**:
+2. **Launch as Administrator**:
    Right-click **`prism-agent.exe`** and select **"Run as Administrator"**.
    > ⚠️ **Why Administrator Rights are Required**: Windows packet sniffing drivers (Scapy / Npcap) require elevated privileges to access raw network interface cards.
 
+3. **Automatic Pairing & Protection**:
+   The agent will automatically read the target computer's unique hostname (e.g. `DESKTOP-FINANCE`), register with your Central Admin Server, and begin monitoring immediately.
+
 ---
 
-### ⚙️ 3. Configuration Breakdown (`.env.agent`)
+### ⚙️ 3. Optional Advanced Configuration (`.env.agent`)
 
-The **`.env.agent`** file controls how the sensor communicates with your Central Admin Server:
+Downloading `.env.agent` is **100% OPTIONAL**. Power users can optionally create an `.env.agent` file alongside `prism-agent.exe` to override default parameters manually:
 
 ```env
-# ==============================================================================
-# PRISM IDS Sensor Agent Configuration
-# ==============================================================================
-
-# Custom sensor name (Leave default to automatically use Windows Hostname e.g. DESKTOP-FINANCE)
-AGENT_NAME="remote-agent-sensor"
-
-# Central Admin Server URL (Auto-detected during build or manually set to your server IP)
+# Optional: Override default server URL
 SERVER_URL="http://10.3.2.16:8000"
 
-# Heartbeat Telemetry interval in seconds (Reports CPU/RAM health to Admin Dashboard)
+# Optional: Override display name (Defaults to machine hostname)
+AGENT_NAME="remote-agent-sensor"
+
+# Heartbeat & Reconnect interval in seconds
 HEARTBEAT_INTERVAL=15
-
-# Automatic server reconnection retry interval in seconds
 RECONNECT_INTERVAL=5
-
-# HTTP API request timeout in seconds
-HTTP_TIMEOUT=10.0
-
-# Local credentials storage file
-CREDENTIALS_FILE=".agent_credentials.json"
-
-# Logging configuration
-LOG_LEVEL="INFO"
-LOG_FORMAT="json"
-LOG_DIR="logs"
-DEBUG=true
-TIMEZONE="UTC"
 ```
-
-| Configuration Parameter | Default Value | Purpose |
-| :--- | :--- | :--- |
-| **`SERVER_URL`** | `http://<ADMIN_IP>:8000` | Points to your Central Admin Server IP address. |
-| **`AGENT_NAME`** | `remote-agent-sensor` | Custom display name. If default, automatically uses machine hostname (e.g. `DESKTOP-8492AK`). |
-| **`HEARTBEAT_INTERVAL`** | `15` | Frequency (seconds) of sending CPU, RAM, and Disk health metrics to the Dashboard. |
-| **`RECONNECT_INTERVAL`**| `5` | Retry delay (seconds) if connection to Central Server drops. |
-| **`CAPTURE_ENABLED`** | `true` | Enables real-time Scapy network packet capture. |
 
 ---
 
@@ -109,8 +83,7 @@ To ensure `prism-agent.exe` starts automatically every time the Windows PC boots
    - New Trigger → Begin the task: **At startup** (or **At log on**).
 5. Under **Actions**:
    - Action: **Start a program**
-   - Program/script: Browse to `C:\PRISM-Agent\prism-agent.exe`
-   - Start in: `C:\PRISM-Agent\`
+   - Program/script: Browse to `prism-agent.exe`
 6. Click **OK**. The agent will now run silently in the background every time Windows turns on!
 
 ---
