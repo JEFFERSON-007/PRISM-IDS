@@ -15,7 +15,7 @@
 
 *An Enterprise-Grade, Real-Time Intrusion Detection System & Security Operations Center (SOC) Platform powered by Hybrid Signature + ML Detection Engines, Scapy Network Sensors, and Local Ollama AI Security Analyst (`qwen2.5:3b`).*
 
-[Architecture](#-system-architecture) • [Features](#-key-features) • [Deployment & Launch](#-getting-started--deployment) • [AI Analyst](#-ai-security-analyst-ollama) • [Troubleshooting](#-troubleshooting--faq) • [Documentation](#-documentation-suite)
+[Architecture](#-system-architecture) • [Features](#-key-features) • [Deployment & Launch](#-getting-started--deployment) • [Remote Monitoring](#-monitoring-remote-devices-multi-agent) • [AI Analyst](#-ai-security-analyst-ollama) • [Troubleshooting](#-troubleshooting--faq) • [Documentation](#-documentation-suite)
 
 </div>
 
@@ -29,6 +29,7 @@
 - **⚡ High-Performance Sensor Pipeline**: Multithreaded Scapy packet capture daemon with BPF filtering, async bounded queues, and zero packet drop under heavy load.
 - **🧠 Hybrid Detection Fusion**: Combines deterministic signature matching (`rules/signature_rules.json`) with an offline-trained Scikit-learn Random Forest model.
 - **📊 Real-Time Obsidian SOC Dashboard**: A React 19 + TypeScript + Vite dashboard featuring glassmorphic UI cards, live WebSocket alert streaming, and Recharts threat analytics.
+- **🌐 Centralized Multi-Agent Monitoring**: Deploy lightweight sensor agents onto any number of remote machines (Windows, Linux, Cloud VMs) pointing back to your Central Server.
 - **🤖 Local Ollama AI Analyst (`qwen2.5:3b`)**: Local LLM assistant that explains attack telemetry, maps threats to MITRE ATT&CK framework (`T1046`, `T1110`, `T1190`, `T1498`), and suggests prioritized mitigations without sending data off-site.
 - **📄 Automated PDF Incident Briefings**: One-click generation of branded, audit-ready security reports.
 
@@ -179,6 +180,50 @@ python -m pip install -r requirements.txt
 # Run the agent daemon
 python -m agent.main
 ```
+
+---
+
+## 📡 Monitoring Remote Devices (Multi-Agent Setup)
+
+You can deploy the `prism-agent` sensor to any number of remote computers, cloud servers, or Linux VMs to monitor all devices centrally on your Master SOC Dashboard!
+
+```
+                               Central SOC Dashboard
+                                         │
+                                         ▼
+                            Central PRISM FastAPI Server
+                             (http://192.168.1.50:8000)
+                                         ▲
+           ┌─────────────────────────────┼─────────────────────────────┐
+           │                             │                             │
+    Remote Agent 1                Remote Agent 2                Remote Agent 3
+(Windows Laptop / Office)     (Linux Web Gateway / Cloud)    (Database Server / Local)
+```
+
+### Remote Agent Deployment Steps:
+
+1. **Find Central Server IP**:
+   Find the IP address of the machine running your Central PRISM Server (`ipconfig` on Windows or `ifconfig` on Linux, e.g. `192.168.1.50`).
+
+2. **Copy Agent to Target Machine**:
+   Copy or clone the `prism-agent/` directory to the remote machine you wish to monitor.
+
+3. **Configure Central Server URL**:
+   On the remote machine, open `prism-agent/.env.agent` and point `SERVER_URL` to your Central Server:
+   ```env
+   AGENT_NAME="remote-server-gateway"
+   SERVER_URL="http://192.168.1.50:8000"
+   ```
+
+4. **Start Remote Agent Sensor**:
+   On the remote machine, run:
+   ```bash
+   cd prism-agent
+   python -m pip install -r requirements.txt
+   python -m agent.main
+   ```
+
+*The remote agent will automatically register with your Central Server, stream telemetry, and push live threat alerts to your Central SOC Dashboard!*
 
 ---
 

@@ -1,7 +1,7 @@
 """Agent Pydantic Settings Configuration."""
 
 from typing import Optional
-from pydantic import Field
+from pydantic import Field, ValidationInfo, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -15,9 +15,24 @@ class AgentSettings(BaseSettings):
         extra="ignore",
     )
 
-    # Server Connection Configuration
-    SERVER_URL: str = Field(default="http://localhost:8000", description="PRISM Server HTTP base URL")
-    WS_URL: str = Field(default="ws://localhost:8000/ws/v1/connect", description="PRISM Server WebSocket URL")
+    # Central Server Connection Configuration
+    SERVER_URL: str = Field(default="http://localhost:8000", description="PRISM Central Server HTTP base URL")
+    WS_URL: Optional[str] = Field(default=None, description="PRISM Central Server WebSocket URL")
+
+    @field_validator("WS_URL", mode="before")
+    def assemble_ws_url(cls, v: Optional[str], info: ValidationInfo) -> str:
+        """Dynamically derive WebSocket URL from SERVER_URL if not explicitly configured."""
+        if isinstance(v, str) and v.strip():
+            return v
+        server_url = info.data.get("SERVER_URL", "http://localhost:8000")
+        clean_url = server_url.rstrip("/")
+        if clean_url.startswith("https://"):
+            base_ws = clean_url.replace("https://", "wss://")
+        elif clean_url.startswith("http://"):
+            base_ws = clean_url.replace("http://", "ws://")
+        else:
+            base_ws = f"ws://{clean_url}"
+        return f"{base_ws}/ws/v1/connect"
 
     # Agent Identification
     AGENT_NAME: str = Field(default="agent-node-01", description="Unique human-readable agent name")
