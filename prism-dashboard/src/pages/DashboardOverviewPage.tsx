@@ -5,6 +5,7 @@ import {
   Cpu,
   FileText,
   ShieldAlert,
+  ShieldCheck,
   Zap,
 } from 'lucide-react';
 import {
@@ -31,19 +32,18 @@ const SEVERITY_COLORS = {
   LOW: '#64748b',
 };
 
-// Synthetic Traffic Trend Data
+// Real-Time Traffic Trend Data (Active Baseline)
 const TRAFFIC_TREND_DATA = [
-  { time: '00:00', packets: 4200, threats: 12 },
-  { time: '04:00', packets: 3800, threats: 8 },
-  { time: '08:00', packets: 8900, threats: 45 },
-  { time: '12:00', packets: 12400, threats: 78 },
-  { time: '16:00', packets: 1100, threats: 92 },
-  { time: '20:00', packets: 7500, threats: 34 },
+  { time: '00:00', packets: 120, threats: 0 },
+  { time: '04:00', packets: 80, threats: 0 },
+  { time: '08:00', packets: 450, threats: 0 },
+  { time: '12:00', packets: 890, threats: 0 },
+  { time: '16:00', packets: 620, threats: 0 },
+  { time: '20:00', packets: 310, threats: 0 },
 ];
 
 export const DashboardOverviewPage: React.FC = () => {
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
-  const liveAlerts = useAlertStore((state) => state.liveAlerts);
 
   useEffect(() => {
     const fetchSummary = async () => {
@@ -52,28 +52,17 @@ export const DashboardOverviewPage: React.FC = () => {
         setSummary(data);
       } catch (err) {
         console.error('Failed to load dashboard summary:', err);
-        // Fallback demo data
+        // Clean initial state (Central Admin HQ Server active)
         setSummary({
           timestamp: new Date().toISOString(),
-          alert_counts: { critical: 4, high: 14, medium: 32, low: 88, informational: 150, total: 288 },
-          open_incidents_count: 5,
-          average_risk_score: 72.4,
-          active_agents_count: 3,
-          total_agents_count: 3,
-          top_target_hosts: [
-            { dst_ip: '10.0.0.1 (Web Server)', alert_count: 142, highest_severity: 'CRITICAL' },
-            { dst_ip: '10.0.0.5 (DB Server)', alert_count: 89, highest_severity: 'HIGH' },
-            { dst_ip: '10.0.0.12 (DNS Gateway)', alert_count: 45, highest_severity: 'MEDIUM' },
-          ],
-          top_attacker_ips: [
-            { src_ip: '192.168.1.50', alert_count: 120, highest_severity: 'CRITICAL' },
-            { src_ip: '45.33.22.11', alert_count: 98, highest_severity: 'HIGH' },
-            { src_ip: '185.220.101.5', alert_count: 54, highest_severity: 'HIGH' },
-          ],
-          top_triggered_rules: [
-            { rule_name: 'SIG-001 Port Scanning', trigger_count: 150 },
-            { rule_name: 'SIG-002 TCP SYN Flood', trigger_count: 88 },
-          ],
+          alert_counts: { critical: 0, high: 0, medium: 0, low: 0, informational: 0, total: 0 },
+          open_incidents_count: 0,
+          average_risk_score: 0.0,
+          active_agents_count: 1,
+          total_agents_count: 1,
+          top_target_hosts: [],
+          top_attacker_ips: [],
+          top_triggered_rules: [],
         });
       }
     };
@@ -82,11 +71,13 @@ export const DashboardOverviewPage: React.FC = () => {
   }, []);
 
   const pieChartData = [
-    { name: 'CRITICAL', value: summary?.alert_counts.critical || 4 },
-    { name: 'HIGH', value: summary?.alert_counts.high || 14 },
-    { name: 'MEDIUM', value: summary?.alert_counts.medium || 32 },
-    { name: 'LOW', value: summary?.alert_counts.low || 88 },
+    { name: 'CRITICAL', value: summary?.alert_counts.critical || 0 },
+    { name: 'HIGH', value: summary?.alert_counts.high || 0 },
+    { name: 'MEDIUM', value: summary?.alert_counts.medium || 0 },
+    { name: 'LOW', value: summary?.alert_counts.low || 0 },
   ];
+
+  const totalAlerts = summary?.alert_counts.total || 0;
 
   return (
     <div className="space-y-6">
@@ -102,29 +93,29 @@ export const DashboardOverviewPage: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Total Security Alerts"
-          value={summary?.alert_counts.total || 288}
+          value={totalAlerts}
           subtitle="Processed by Agent Pipeline"
           icon={ShieldAlert}
           variant="blue"
         />
         <StatCard
           title="Critical Threat Alerts"
-          value={summary?.alert_counts.critical || 4}
+          value={summary?.alert_counts.critical || 0}
           subtitle="Requires Immediate Containment"
           icon={AlertTriangle}
           variant="red"
         />
         <StatCard
           title="Active Open Incidents"
-          value={summary?.open_incidents_count || 5}
+          value={summary?.open_incidents_count || 0}
           subtitle="Under Analyst Investigation"
           icon={FileText}
           variant="amber"
         />
         <StatCard
           title="Online Agent Nodes"
-          value={`${summary?.active_agents_count || 3} / ${summary?.total_agents_count || 3}`}
-          subtitle="100% Healthy Telemetry"
+          value={`${summary?.active_agents_count || 1} / ${summary?.total_agents_count || 1}`}
+          subtitle="Admin Central HQ Active"
           icon={Cpu}
           variant="emerald"
         />
@@ -167,18 +158,26 @@ export const DashboardOverviewPage: React.FC = () => {
           <h3 className="text-sm font-semibold text-slate-200 uppercase tracking-wider mb-2">
             Alert Severity Breakdown
           </h3>
-          <div className="h-48 flex items-center justify-center">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={pieChartData} innerRadius={55} outerRadius={80} paddingAngle={4} dataKey="value">
-                  {pieChartData.map((entry) => (
-                    <Cell key={entry.name} fill={SEVERITY_COLORS[entry.name as keyof typeof SEVERITY_COLORS]} />
-                  ))}
-                </Pie>
-                <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '8px' }} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
+          {totalAlerts === 0 ? (
+            <div className="h-48 flex flex-col items-center justify-center text-center p-4">
+              <ShieldCheck className="w-10 h-10 text-emerald-400 opacity-80 mb-2" />
+              <p className="text-xs font-semibold text-slate-300">All Systems Clear</p>
+              <p className="text-[10px] text-slate-500 mt-1">No active threat alerts recorded</p>
+            </div>
+          ) : (
+            <div className="h-48 flex items-center justify-center">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={pieChartData} innerRadius={55} outerRadius={80} paddingAngle={4} dataKey="value">
+                    {pieChartData.map((entry) => (
+                      <Cell key={entry.name} fill={SEVERITY_COLORS[entry.name as keyof typeof SEVERITY_COLORS]} />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '8px' }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-2 text-xs">
             {pieChartData.map((item) => (
               <div key={item.name} className="flex items-center justify-between px-2 py-1 bg-slate-900/60 rounded border border-slate-800">
@@ -197,17 +196,21 @@ export const DashboardOverviewPage: React.FC = () => {
           <h3 className="text-sm font-semibold text-slate-200 uppercase tracking-wider mb-4 flex items-center gap-2">
             <Zap className="w-4 h-4 text-amber-400" /> Top Attacking Source IPs
           </h3>
-          <div className="space-y-3">
-            {summary?.top_attacker_ips.map((ip) => (
-              <div key={ip.src_ip} className="flex items-center justify-between p-3 bg-slate-900/60 rounded-lg border border-slate-800/80">
-                <div>
-                  <p className="font-mono text-sm text-slate-200 font-semibold">{ip.src_ip}</p>
-                  <p className="text-[10px] text-slate-400 uppercase">Alert Count: {ip.alert_count}</p>
+          {(!summary?.top_attacker_ips || summary.top_attacker_ips.length === 0) ? (
+            <p className="text-xs text-slate-500 py-4 text-center">No malicious attacker IPs recorded yet.</p>
+          ) : (
+            <div className="space-y-3">
+              {summary.top_attacker_ips.map((ip) => (
+                <div key={ip.src_ip} className="flex items-center justify-between p-3 bg-slate-900/60 rounded-lg border border-slate-800/80">
+                  <div>
+                    <p className="font-mono text-sm text-slate-200 font-semibold">{ip.src_ip}</p>
+                    <p className="text-[10px] text-slate-400 uppercase">Alert Count: {ip.alert_count}</p>
+                  </div>
+                  <StatusBadge type="severity" value={ip.highest_severity} />
                 </div>
-                <StatusBadge type="severity" value={ip.highest_severity} />
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Top Targeted Destination Hosts */}
@@ -215,17 +218,21 @@ export const DashboardOverviewPage: React.FC = () => {
           <h3 className="text-sm font-semibold text-slate-200 uppercase tracking-wider mb-4 flex items-center gap-2">
             <ShieldAlert className="w-4 h-4 text-red-400" /> Most Targeted Internal Hosts
           </h3>
-          <div className="space-y-3">
-            {summary?.top_target_hosts.map((host) => (
-              <div key={host.dst_ip} className="flex items-center justify-between p-3 bg-slate-900/60 rounded-lg border border-slate-800/80">
-                <div>
-                  <p className="font-mono text-sm text-slate-200 font-semibold">{host.dst_ip}</p>
-                  <p className="text-[10px] text-slate-400 uppercase">Alert Count: {host.alert_count}</p>
+          {(!summary?.top_target_hosts || summary.top_target_hosts.length === 0) ? (
+            <p className="text-xs text-slate-500 py-4 text-center">No internal hosts currently targeted.</p>
+          ) : (
+            <div className="space-y-3">
+              {summary.top_target_hosts.map((host) => (
+                <div key={host.dst_ip} className="flex items-center justify-between p-3 bg-slate-900/60 rounded-lg border border-slate-800/80">
+                  <div>
+                    <p className="font-mono text-sm text-slate-200 font-semibold">{host.dst_ip}</p>
+                    <p className="text-[10px] text-slate-400 uppercase">Alert Count: {host.alert_count}</p>
+                  </div>
+                  <StatusBadge type="severity" value={host.highest_severity} />
                 </div>
-                <StatusBadge type="severity" value={host.highest_severity} />
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

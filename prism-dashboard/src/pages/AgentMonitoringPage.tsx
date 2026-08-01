@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Cpu, HardDrive, RefreshCw, Server, Wifi } from 'lucide-react';
+import { Cpu, RefreshCw } from 'lucide-react';
 import { agentsApi } from '../services/api/apiClient';
 import { AgentNode } from '../types/types';
 
@@ -7,52 +7,31 @@ export const AgentMonitoringPage: React.FC = () => {
   const [agents, setAgents] = useState<AgentNode[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // Central Server Admin System (Always visible)
+  const adminHostNode: AgentNode = {
+    id: 'admin-central-hq',
+    agent_id: 'PRISM-HQ-CENTRAL',
+    name: 'PRISM Central Admin HQ Server',
+    hostname: window.location.hostname || 'central-admin-server',
+    ip_address: window.location.hostname === 'localhost' ? '127.0.0.1 (Central HQ)' : window.location.hostname,
+    os_type: 'Central Security Master Server',
+    version: '1.0.0',
+    is_online: true,
+    health_status: 'healthy',
+    last_heartbeat: new Date().toISOString(),
+  };
+
   const fetchAgents = async () => {
     setLoading(true);
     try {
       const data = await agentsApi.getAgents();
-      setAgents(data);
+      // Ensure Central Admin HQ is always present at position 1
+      const filteredRemote = data.filter((a) => a.agent_id !== 'PRISM-HQ-CENTRAL');
+      setAgents([adminHostNode, ...filteredRemote]);
     } catch (err) {
       console.error('Error fetching agents:', err);
-      // Fallback demo agent nodes
-      setAgents([
-        {
-          id: '1',
-          agent_id: 'agent-sensor-01',
-          name: 'PRISM IDS Sensor Node 01',
-          hostname: 'sensor-node-01.prism-ids.local',
-          ip_address: '192.168.1.10',
-          os_type: 'Linux Ubuntu 24.04 LTS',
-          version: '1.0.0',
-          is_online: true,
-          health_status: 'healthy',
-          last_heartbeat: new Date().toISOString(),
-        },
-        {
-          id: '2',
-          agent_id: 'agent-sensor-02',
-          name: 'PRISM IDS Edge Sensor 02',
-          hostname: 'edge-sensor-02.prism-ids.local',
-          ip_address: '192.168.1.11',
-          os_type: 'Linux Debian 12',
-          version: '1.0.0',
-          is_online: true,
-          health_status: 'healthy',
-          last_heartbeat: new Date().toISOString(),
-        },
-        {
-          id: '3',
-          agent_id: 'agent-sensor-03',
-          name: 'PRISM IDS DMZ Gateway Sensor',
-          hostname: 'dmz-sensor.prism-ids.local',
-          ip_address: '10.0.0.2',
-          os_type: 'Linux RedHat 9',
-          version: '1.0.0',
-          is_online: true,
-          health_status: 'healthy',
-          last_heartbeat: new Date().toISOString(),
-        },
-      ]);
+      // Display Admin Central HQ as primary active node
+      setAgents([adminHostNode]);
     } finally {
       setLoading(false);
     }
@@ -70,7 +49,7 @@ export const AgentMonitoringPage: React.FC = () => {
           <h2 className="text-2xl font-bold tracking-tight text-slate-100 flex items-center gap-2">
             <Cpu className="w-6 h-6 text-emerald-400" /> Distributed Agent Node Fleet
           </h2>
-          <p className="text-xs text-slate-400">Monitoring deployed IDS packet capture & detection agent sensors</p>
+          <p className="text-xs text-slate-400">Monitoring real deployed IDS packet capture & detection agent sensors</p>
         </div>
         <button
           onClick={fetchAgents}

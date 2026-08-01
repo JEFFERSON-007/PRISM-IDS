@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Eye, Filter, RefreshCw, Search, ShieldAlert } from 'lucide-react';
+import { Eye, RefreshCw, Search, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { alertsApi } from '../services/api/apiClient';
 import { useAlertStore } from '../stores/alertStore';
@@ -38,50 +38,9 @@ export const LiveAlertsPage: React.FC = () => {
       setTotalPages(res.total_pages);
     } catch (err) {
       console.error('Error fetching alerts:', err);
-      // Fallback demo alerts
-      setAlerts([
-        {
-          id: '1',
-          alert_id: 'ALT-2026-0001',
-          timestamp: new Date().toISOString(),
-          first_seen: new Date().toISOString(),
-          last_seen: new Date().toISOString(),
-          detection_id: 'DET-001',
-          flow_id: 'FLOW-100',
-          src_ip: '192.168.1.50',
-          dst_ip: '10.0.0.1',
-          src_port: 44321,
-          dst_port: 80,
-          protocol: 'TCP',
-          risk_score: 92.5,
-          severity: 'CRITICAL',
-          detection_method: 'HYBRID',
-          confidence: 0.95,
-          status: 'OPEN',
-          occurrence_count: 14,
-        },
-        {
-          id: '2',
-          alert_id: 'ALT-2026-0002',
-          timestamp: new Date().toISOString(),
-          first_seen: new Date().toISOString(),
-          last_seen: new Date().toISOString(),
-          detection_id: 'DET-002',
-          flow_id: 'FLOW-102',
-          src_ip: '45.33.22.11',
-          dst_ip: '10.0.0.5',
-          src_port: 55432,
-          dst_port: 5432,
-          protocol: 'TCP',
-          risk_score: 78.0,
-          severity: 'HIGH',
-          detection_method: 'SIGNATURE',
-          confidence: 0.88,
-          status: 'OPEN',
-          occurrence_count: 5,
-        },
-      ]);
-      setTotalRecords(2);
+      // Clean empty state - show real alerts only
+      setAlerts([]);
+      setTotalRecords(0);
       setTotalPages(1);
     } finally {
       setLoading(false);
@@ -166,81 +125,93 @@ export const LiveAlertsPage: React.FC = () => {
 
       {/* Alerts Table */}
       <div className="glass-panel rounded-xl border border-slate-800 overflow-hidden">
-        <table className="w-full text-left text-xs text-slate-300">
-          <thead className="bg-slate-900/80 text-slate-400 uppercase font-semibold text-[10px] tracking-wider border-b border-slate-800">
-            <tr>
-              <th className="p-3.5">Severity</th>
-              <th className="p-3.5">Alert ID</th>
-              <th className="p-3.5">Source IP</th>
-              <th className="p-3.5">Destination IP</th>
-              <th className="p-3.5">Protocol</th>
-              <th className="p-3.5">Risk Score</th>
-              <th className="p-3.5">Method</th>
-              <th className="p-3.5">Status</th>
-              <th className="p-3.5 text-right">Action</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-800/80">
-            {alerts.map((alert) => (
-              <tr key={alert.id} className="hover:bg-slate-800/40 transition-colors">
-                <td className="p-3.5">
-                  <StatusBadge type="severity" value={alert.severity} />
-                </td>
-                <td className="p-3.5 font-mono font-semibold text-slate-100">{alert.alert_id}</td>
-                <td className="p-3.5 font-mono text-slate-300">{alert.src_ip}:{alert.src_port}</td>
-                <td className="p-3.5 font-mono text-slate-300">{alert.dst_ip}:{alert.dst_port}</td>
-                <td className="p-3.5 font-mono text-slate-400">{alert.protocol}</td>
-                <td className="p-3.5 font-bold">
-                  <span
-                    className={
-                      alert.risk_score >= 80
-                        ? 'text-red-400'
-                        : alert.risk_score >= 50
-                        ? 'text-amber-400'
-                        : 'text-blue-400'
-                    }
-                  >
-                    {alert.risk_score}
-                  </span>
-                </td>
-                <td className="p-3.5 text-slate-400">{alert.detection_method}</td>
-                <td className="p-3.5">
-                  <StatusBadge type="status" value={alert.status} />
-                </td>
-                <td className="p-3.5 text-right">
-                  <button
-                    onClick={() => navigate(`/alerts/${alert.alert_id}`)}
-                    className="p-1.5 bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 rounded-lg border border-blue-500/30 transition-colors"
-                    title="Investigate Alert"
-                  >
-                    <Eye className="w-4 h-4" />
-                  </button>
-                </td>
+        {alerts.length === 0 ? (
+          <div className="p-12 text-center space-y-3">
+            <ShieldCheck className="w-12 h-12 text-emerald-400 mx-auto opacity-80" />
+            <h3 className="text-base font-bold text-slate-200">No Threat Alerts Detected</h3>
+            <p className="text-xs text-slate-400 max-w-md mx-auto">
+              All monitored system network interfaces are operating securely. Live network packet capture and hybrid detection engine actively monitoring...
+            </p>
+          </div>
+        ) : (
+          <table className="w-full text-left text-xs text-slate-300">
+            <thead className="bg-slate-900/80 text-slate-400 uppercase font-semibold text-[10px] tracking-wider border-b border-slate-800">
+              <tr>
+                <th className="p-3.5">Severity</th>
+                <th className="p-3.5">Alert ID</th>
+                <th className="p-3.5">Source IP</th>
+                <th className="p-3.5">Destination IP</th>
+                <th className="p-3.5">Protocol</th>
+                <th className="p-3.5">Risk Score</th>
+                <th className="p-3.5">Method</th>
+                <th className="p-3.5">Status</th>
+                <th className="p-3.5 text-right">Action</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-slate-800/80">
+              {alerts.map((alert) => (
+                <tr key={alert.id} className="hover:bg-slate-800/40 transition-colors">
+                  <td className="p-3.5">
+                    <StatusBadge type="severity" value={alert.severity} />
+                  </td>
+                  <td className="p-3.5 font-mono font-semibold text-slate-100">{alert.alert_id}</td>
+                  <td className="p-3.5 font-mono text-slate-300">{alert.src_ip}:{alert.src_port}</td>
+                  <td className="p-3.5 font-mono text-slate-300">{alert.dst_ip}:{alert.dst_port}</td>
+                  <td className="p-3.5 font-mono text-slate-400">{alert.protocol}</td>
+                  <td className="p-3.5 font-bold">
+                    <span
+                      className={
+                        alert.risk_score >= 80
+                          ? 'text-red-400'
+                          : alert.risk_score >= 50
+                          ? 'text-amber-400'
+                          : 'text-blue-400'
+                      }
+                    >
+                      {alert.risk_score}
+                    </span>
+                  </td>
+                  <td className="p-3.5 text-slate-400">{alert.detection_method}</td>
+                  <td className="p-3.5">
+                    <StatusBadge type="status" value={alert.status} />
+                  </td>
+                  <td className="p-3.5 text-right">
+                    <button
+                      onClick={() => navigate(`/alerts/${alert.alert_id}`)}
+                      className="p-1.5 bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 rounded-lg border border-blue-500/30 transition-colors"
+                      title="Investigate Alert"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
 
         {/* Pagination Footer */}
-        <div className="p-4 bg-slate-900/60 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
-          <span>Showing page {page} of {totalPages} ({totalRecords} records)</span>
-          <div className="flex space-x-2">
-            <button
-              disabled={page <= 1}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded border border-slate-700 disabled:opacity-40"
-            >
-              Previous
-            </button>
-            <button
-              disabled={page >= totalPages}
-              onClick={() => setPage((p) => p + 1)}
-              className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded border border-slate-700 disabled:opacity-40"
-            >
-              Next
-            </button>
+        {alerts.length > 0 && (
+          <div className="p-4 bg-slate-900/60 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+            <span>Showing page {page} of {totalPages} ({totalRecords} records)</span>
+            <div className="flex space-x-2">
+              <button
+                disabled={page <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded border border-slate-700 disabled:opacity-40"
+              >
+                Previous
+              </button>
+              <button
+                disabled={page >= totalPages}
+                onClick={() => setPage((p) => p + 1)}
+                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded border border-slate-700 disabled:opacity-40"
+              >
+                Next
+              </button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

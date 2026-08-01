@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { CheckCircle2, Clock, FileText, Plus, UserPlus } from 'lucide-react';
+import { FileText, Plus, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { incidentsApi } from '../services/api/apiClient';
@@ -27,37 +27,9 @@ export const IncidentsPage: React.FC = () => {
       }
     } catch (err) {
       console.error('Error loading incidents:', err);
-      // Fallback demo incidents
-      const demoIncidents: Incident[] = [
-        {
-          id: '1',
-          incident_id: 'INC-2026-0001',
-          title: 'Distributed Denial of Service Attack Campaign',
-          description: 'High volume TCP SYN flood targets internal web application server 10.0.0.1.',
-          severity: 'CRITICAL',
-          status: 'OPEN',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          notes: [
-            { author: 'Analyst A', timestamp: new Date().toISOString(), note: 'Initiated rate limiting firewall rules.' },
-          ],
-        },
-        {
-          id: '2',
-          incident_id: 'INC-2026-0002',
-          title: 'Database Reconnaissance & Port Scan',
-          description: 'Attacker IP 45.33.22.11 probed port 5432 and 3389.',
-          severity: 'HIGH',
-          status: 'ACKNOWLEDGED',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          notes: [
-            { author: 'Analyst B', timestamp: new Date().toISOString(), note: 'Quarantined source IP.' },
-          ],
-        },
-      ];
-      setIncidents(demoIncidents);
-      setSelectedIncident(demoIncidents[0]);
+      // Clean empty state - show real incidents only
+      setIncidents([]);
+      setSelectedIncident(null);
     } finally {
       setLoading(false);
     }
@@ -126,112 +98,122 @@ export const IncidentsPage: React.FC = () => {
         </button>
       </div>
 
-      {/* Incident Split Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Incident List Column */}
-        <div className="space-y-3">
-          {incidents.map((inc) => (
-            <div
-              key={inc.id}
-              onClick={() => setSelectedIncident(inc)}
-              className={`p-4 glass-panel rounded-xl border transition-all cursor-pointer ${
-                selectedIncident?.id === inc.id
-                  ? 'border-blue-500 bg-blue-500/10 shadow-[0_0_15px_rgba(59,130,246,0.15)]'
-                  : 'border-slate-800 hover:border-slate-700'
-              }`}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-mono text-xs font-bold text-slate-200">{inc.incident_id}</span>
-                <StatusBadge type="severity" value={inc.severity} />
-              </div>
-              <h4 className="text-sm font-semibold text-slate-100 mb-1 line-clamp-1">{inc.title}</h4>
-              <div className="flex items-center justify-between text-[10px] text-slate-400 mt-2">
-                <StatusBadge type="status" value={inc.status} />
-                <span>{new Date(inc.created_at).toLocaleDateString()}</span>
-              </div>
-            </div>
-          ))}
+      {incidents.length === 0 ? (
+        <div className="glass-panel p-12 rounded-xl border border-slate-800 text-center space-y-3">
+          <ShieldCheck className="w-12 h-12 text-emerald-400 mx-auto opacity-80" />
+          <h3 className="text-base font-bold text-slate-200">No Open Security Incidents</h3>
+          <p className="text-xs text-slate-400 max-w-md mx-auto">
+            All system threat levels are normal. When live threats trigger critical thresholds, incident tickets will populate automatically.
+          </p>
         </div>
-
-        {/* Selected Incident Detail View */}
-        {selectedIncident && (
-          <div className="lg:col-span-2 glass-panel p-6 rounded-xl border border-slate-800 space-y-6">
-            <div className="flex items-start justify-between border-b border-slate-800 pb-4">
-              <div>
-                <div className="flex items-center space-x-3 mb-1">
-                  <h3 className="text-lg font-bold text-slate-100">{selectedIncident.title}</h3>
-                  <StatusBadge type="severity" value={selectedIncident.severity} />
-                  <StatusBadge type="status" value={selectedIncident.status} />
+      ) : (
+        /* Incident Split Layout */
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Incident List Column */}
+          <div className="space-y-3">
+            {incidents.map((inc) => (
+              <div
+                key={inc.id}
+                onClick={() => setSelectedIncident(inc)}
+                className={`p-4 glass-panel rounded-xl border transition-all cursor-pointer ${
+                  selectedIncident?.id === inc.id
+                    ? 'border-blue-500 bg-blue-500/10 shadow-[0_0_15px_rgba(59,130,246,0.15)]'
+                    : 'border-slate-800 hover:border-slate-700'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-mono text-xs font-bold text-slate-200">{inc.incident_id}</span>
+                  <StatusBadge type="severity" value={inc.severity} />
                 </div>
-                <p className="text-xs text-slate-400">Incident Identifier: {selectedIncident.incident_id}</p>
+                <h4 className="text-sm font-semibold text-slate-100 mb-1 line-clamp-1">{inc.title}</h4>
+                <div className="flex items-center justify-between text-[10px] text-slate-400 mt-2">
+                  <StatusBadge type="status" value={inc.status} />
+                  <span>{new Date(inc.created_at).toLocaleDateString()}</span>
+                </div>
               </div>
-
-              {/* Status Transition Action Buttons */}
-              <div className="flex space-x-2">
-                {selectedIncident.status === 'OPEN' && (
-                  <button
-                    onClick={() => handleStatusChange('ACKNOWLEDGED')}
-                    className="px-3 py-1.5 bg-amber-600/20 hover:bg-amber-600/40 text-amber-300 text-xs font-semibold rounded-lg border border-amber-500/40"
-                  >
-                    Acknowledge
-                  </button>
-                )}
-                {selectedIncident.status !== 'RESOLVED' && (
-                  <button
-                    onClick={() => handleStatusChange('RESOLVED')}
-                    className="px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-300 text-xs font-semibold rounded-lg border border-emerald-500/40"
-                  >
-                    Resolve Incident
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Description */}
-            <div>
-              <h4 className="text-xs font-semibold uppercase text-slate-400 mb-1">Description</h4>
-              <p className="text-xs text-slate-200 bg-slate-900/60 p-3 rounded-lg border border-slate-800">
-                {selectedIncident.description || 'No detailed description provided.'}
-              </p>
-            </div>
-
-            {/* Analyst Investigation Notes Thread */}
-            <div className="space-y-3">
-              <h4 className="text-xs font-semibold uppercase text-slate-400 flex items-center gap-2">
-                <Clock className="w-4 h-4 text-blue-400" /> Analyst Investigation Log
-              </h4>
-              <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                {selectedIncident.notes?.map((note, idx) => (
-                  <div key={idx} className="p-3 bg-slate-900/80 rounded-lg border border-slate-800 text-xs space-y-1">
-                    <div className="flex justify-between text-[10px] text-slate-500 font-mono">
-                      <span>Author: {note.author}</span>
-                      <span>{new Date(note.timestamp).toLocaleString()}</span>
-                    </div>
-                    <p className="text-slate-200">{note.note}</p>
-                  </div>
-                ))}
-              </div>
-
-              {/* Add Note Form */}
-              <form onSubmit={handleAddNote} className="flex space-x-2 pt-2">
-                <input
-                  type="text"
-                  placeholder="Type investigation note..."
-                  value={newNote}
-                  onChange={(e) => setNewNote(e.target.value)}
-                  className="flex-1 bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500"
-                />
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg"
-                >
-                  Add Note
-                </button>
-              </form>
-            </div>
+            ))}
           </div>
-        )}
-      </div>
+
+          {/* Selected Incident Detail View */}
+          {selectedIncident && (
+            <div className="lg:col-span-2 glass-panel p-6 rounded-xl border border-slate-800 space-y-6">
+              <div className="flex items-start justify-between border-b border-slate-800 pb-4">
+                <div>
+                  <div className="flex items-center space-x-3 mb-1">
+                    <h3 className="text-lg font-bold text-slate-100">{selectedIncident.title}</h3>
+                    <StatusBadge type="severity" value={selectedIncident.severity} />
+                    <StatusBadge type="status" value={selectedIncident.status} />
+                  </div>
+                  <p className="text-xs text-slate-400">Incident Identifier: {selectedIncident.incident_id}</p>
+                </div>
+
+                {/* Status Transition Action Buttons */}
+                <div className="flex space-x-2">
+                  {selectedIncident.status === 'OPEN' && (
+                    <button
+                      onClick={() => handleStatusChange('ACKNOWLEDGED')}
+                      className="px-3 py-1.5 bg-amber-600/20 hover:bg-amber-600/40 text-amber-300 text-xs font-semibold rounded-lg border border-amber-500/40"
+                    >
+                      Acknowledge
+                    </button>
+                  )}
+                  {selectedIncident.status !== 'RESOLVED' && (
+                    <button
+                      onClick={() => handleStatusChange('RESOLVED')}
+                      className="px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-300 text-xs font-semibold rounded-lg border border-emerald-500/40"
+                    >
+                      Resolve Incident
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Description */}
+              <div>
+                <h4 className="text-xs font-semibold uppercase text-slate-400 mb-1">Description</h4>
+                <p className="text-xs text-slate-200 bg-slate-900/60 p-3 rounded-lg border border-slate-800">
+                  {selectedIncident.description || 'No detailed description provided.'}
+                </p>
+              </div>
+
+              {/* Analyst Investigation Notes Thread */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-semibold uppercase text-slate-400 flex items-center gap-2">
+                  Analyst Investigation Log
+                </h4>
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                  {selectedIncident.notes?.map((note, idx) => (
+                    <div key={idx} className="p-3 bg-slate-900/80 rounded-lg border border-slate-800 text-xs space-y-1">
+                      <div className="flex justify-between text-[10px] text-slate-500 font-mono">
+                        <span>Author: {note.author}</span>
+                        <span>{new Date(note.timestamp).toLocaleString()}</span>
+                      </div>
+                      <p className="text-slate-200">{note.note}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Add Note Form */}
+                <form onSubmit={handleAddNote} className="flex space-x-2 pt-2">
+                  <input
+                    type="text"
+                    placeholder="Type investigation note..."
+                    value={newNote}
+                    onChange={(e) => setNewNote(e.target.value)}
+                    className="flex-1 bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500"
+                  />
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg"
+                  >
+                    Add Note
+                  </button>
+                </form>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Modal to Create Incident */}
       {showCreateModal && (
