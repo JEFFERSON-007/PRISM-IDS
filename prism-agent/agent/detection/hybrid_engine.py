@@ -73,15 +73,15 @@ class HybridEngine:
         while self._is_running:
             try:
                 vector: FeatureVector = await self.input_feature_queue.get()
-                self._evaluate_vector(vector)
+                await self._evaluate_vector_async(vector)
             except asyncio.CancelledError:
                 break
             except Exception as exc:
                 self.statistics.record_error()
                 logger.error("Error in hybrid detection consumer loop", error=str(exc))
 
-    def _evaluate_vector(self, vector: FeatureVector) -> None:
-        """Evaluate vector across Signature & ML engines, fusing results."""
+    async def _evaluate_vector_async(self, vector: FeatureVector) -> None:
+        """Evaluate vector across Signature & ML engines asynchronously, fusing results."""
         start_t = time.perf_counter()
         try:
             # 1. Signature Engine Evaluation
@@ -89,38 +89,38 @@ class HybridEngine:
             if agent_settings.SIGNATURE_ENGINE_ENABLED:
                 matched_rules = self.signature_engine.evaluate(vector)
 
-            # 2. Machine Learning Engine Evaluation
+            # 2. Machine Learning Engine Evaluation (Async Offloaded to Thread Worker Pool)
             ml_result = None
             if agent_settings.ML_ENGINE_ENABLED and self.ml_engine.is_available:
-                ml_result = self.ml_engine.predict(vector)
+                ml_result = await self.ml_engine.predict_async(vector)
 
             # 3. Detection Fusion
             detection = DetectionFusion.fuse(vector, matched_rules, ml_result)
 
             dur_ms = (time.perf_counter() - start_t) * 1000.0
-            self.statistics.record_processed(dur_ms)
+            self.statistics.record_evaluation(dur_ms)
 
-            if detection and detection.confidence_score >= agent_settings.CONFIDENCE_THRESHOLD:
-                is_ml_pos = ml_result.is_malicious if ml_result else False
-                self.output_queue.push_nowait(detection)
-                self.statistics.record_detection(len(matched_rules), is_ml_pos)
-                logger.info(
-                    "Detection output queued",
-                    detection_id=detection.detection_id,
-                    method=detection.detection_method.value,
-                    severity=detection.severity.value,
-                    confidence=detection.confidence_score,
-                )
+            if detection:
+                if matched_rules:
+                    self.statistics.record_signature_hit()
+                if ml_result and ml_result.is_malicious:
+                    self.statistics.record_ml_hit()
+
+                pushed = self.output_queue.push_nowait(detection)
+                if not pushed:
+                    self.statistics.record_drop()
+                    logger.warning("Detection queue full: dropped detection result")
         except Exception as exc:
             self.statistics.record_error()
-            logger.error("Failed to evaluate feature vector in HybridEngine", flow_id=vector.flow_id, error=str(exc))
+            logger.error("Error evaluating feature vector", error=str(exc))
 
     def get_status(self) -> Dict[str, Any]:
-        """Return runtime state and detection statistics."""
+        """Return runtime state and performance metrics summary."""
         return {
             "initialized": self._is_initialized,
             "running": self._is_running,
-            "ml_model_loaded": self.ml_engine.is_available,
-            "signature_rules_count": len(self.signature_engine.rules),
-            "statistics": self.statistics.get_summary(self.output_queue.size),
+            "queue_size": self.output_queue.size,
+            "signature_engine_ready": True,
+            "ml_engine_ready": self.ml_engine.is_available,
+            "statistics": self.statistics.get_summary(),
         }

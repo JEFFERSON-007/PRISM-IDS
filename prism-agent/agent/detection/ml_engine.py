@@ -1,5 +1,6 @@
-"""Machine Learning Inference Engine."""
+"""Machine Learning Inference Engine with Async Worker Thread Pool Offloading."""
 
+import asyncio
 from typing import Any, Optional
 import structlog
 from agent.core.config import agent_settings
@@ -23,7 +24,7 @@ class MLEngine:
         return self.model is not None
 
     def predict(self, vector: FeatureVector) -> Optional[MLPredictionResult]:
-        """Perform classification inference on FeatureVector."""
+        """Perform classification inference on FeatureVector synchronously."""
         if not self.is_available:
             return None
 
@@ -51,3 +52,7 @@ class MLEngine:
         except Exception as exc:
             logger.error("ML model inference failed", error=str(exc))
             return None
+
+    async def predict_async(self, vector: FeatureVector) -> Optional[MLPredictionResult]:
+        """Perform classification inference asynchronously by offloading CPU-bound matrix math to worker thread pool."""
+        return await asyncio.to_thread(self.predict, vector)
