@@ -3,7 +3,7 @@
 from datetime import datetime, timezone
 import platform
 import socket
-from typing import Any, Dict, List
+from typing import Any, Dict
 import psutil
 import structlog
 from agent.core.config import agent_settings
@@ -31,8 +31,13 @@ class SystemCollector:
         ip_addr = SystemCollector.get_primary_ip()
         os_info = f"{platform.system()} {platform.release()}"
 
+        # If agent_name is default placeholder, dynamically format with machine hostname
+        agent_name = agent_settings.AGENT_NAME
+        if agent_name in ["agent-node-01", "remote-agent-sensor"]:
+            agent_name = f"agent-{hostname.lower()}"
+
         return {
-            "agent_name": agent_settings.AGENT_NAME,
+            "agent_name": agent_name,
             "hostname": hostname,
             "ip_address": ip_addr,
             "operating_system": os_info,

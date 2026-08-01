@@ -15,7 +15,7 @@
 
 *An Enterprise-Grade, Real-Time Intrusion Detection System & Security Operations Center (SOC) Platform powered by Hybrid Signature + ML Detection Engines, Scapy Network Sensors, and Local Ollama AI Security Analyst (`qwen2.5:3b`).*
 
-[Architecture](#-system-architecture) • [Features](#-key-features) • [Deployment & Launch](#-getting-started--deployment) • [Remote Monitoring](#-monitoring-remote-devices-multi-agent) • [AI Analyst](#-ai-security-analyst-ollama) • [Troubleshooting](#-troubleshooting--faq) • [Documentation](#-documentation-suite)
+[Architecture](#-system-architecture) • [Features](#-key-features) • [Deployment & Launch](#-getting-started--deployment) • [Remote Monitoring](#-monitoring-remote-devices-multi-agent) • [Executable (.exe) Build](#-standalone-windows-exe-agent-build) • [AI Analyst](#-ai-security-analyst-ollama) • [Troubleshooting](#-troubleshooting--faq) • [Documentation](#-documentation-suite)
 
 </div>
 
@@ -223,7 +223,24 @@ You can deploy the `prism-agent` sensor to any number of remote computers, cloud
    python -m agent.main
    ```
 
-*The remote agent will automatically register with your Central Server, stream telemetry, and push live threat alerts to your Central SOC Dashboard!*
+---
+
+## 📦 Standalone Windows `.exe` Agent Build
+
+You can bundle the sensor agent into a **single standalone Windows `.exe` file** (`prism-agent.exe`) that requires **NO Python or Git installation** on target systems!
+
+### How to Build `prism-agent.exe`:
+```bash
+cd prism-agent
+python build_exe.py
+```
+
+This creates `prism-agent/dist/prism-agent.exe`. 
+
+### Deploying to Any Windows PC:
+1. Copy `prism-agent.exe` and `.env.agent` to the target Windows PC.
+2. Edit `.env.agent` on the target PC to point `SERVER_URL` to your Central Server IP (`http://YOUR_SERVER_IP:8000`).
+3. Double click `prism-agent.exe` (or run as Administrator) to start monitoring instantly!
 
 ---
 
