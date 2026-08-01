@@ -26,6 +26,13 @@ share/python-wheels/
 *.egg
 MANIFEST
 
+# Node Modules & Frontend Build
+node_modules/
+**/node_modules/
+prism-dashboard/node_modules/
+prism-dashboard/dist/
+.vite/
+
 # Pytest / Coverage
 .pytest_cache/
 .coverage

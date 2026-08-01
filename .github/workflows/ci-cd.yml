@@ -52,5 +52,6 @@ jobs:
       - name: Build Dashboard Frontend
         run: |
           cd prism-dashboard
-          npm install
+          rm -rf node_modules
+          npm install --legacy-peer-deps
           npm run build
