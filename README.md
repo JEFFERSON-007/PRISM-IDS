@@ -15,7 +15,7 @@
 
 *An Enterprise-Grade, Real-Time Intrusion Detection System & Security Operations Center (SOC) Platform powered by Hybrid Signature + Scikit-Learn Random Forest ML Engines, Scapy Network Sensors, and Local Ollama AI Security Analyst (`qwen2.5:3b`).*
 
-[Architecture](#-system-architecture) • [Features](#-key-features) • [Deployment & Launch](#-getting-started--deployment) • [Remote Monitoring](#-monitoring-remote-devices-multi-agent) • [Standalone Executable (.exe)](#-standalone-windows-exe-agent-build) • [AI Analyst](#-ai-security-analyst-ollama) • [Troubleshooting](#-troubleshooting--faq) • [Documentation](#-documentation-suite)
+[Architecture](#-system-architecture) • [Admin Guide](#-admin-end-guide-central-soc-master) • [User Guide](#-user-end-guide-target-device-sensor) • [Deployment](#-getting-started--deployment) • [Executable (.exe)](#-standalone-windows-exe-agent-build) • [AI Analyst](#-ai-security-analyst-ollama) • [Troubleshooting](#-troubleshooting--faq)
 
 </div>
 
@@ -32,7 +32,52 @@
 - **📊 Real-Time Obsidian SOC Dashboard**: A React 19 + TypeScript + Vite dashboard featuring glassmorphic UI cards, live WebSocket alert streaming, and Recharts threat analytics.
 - **🌐 Zero-Config Standalone Windows Executable Generator**: Auto-detects Central Server IP address and compiles a 34 MB self-contained `prism-agent.exe` ready to monitor any computer on your network.
 - **🤖 Local Ollama AI Security Analyst (`qwen2.5:3b`)**: Local LLM assistant that explains attack telemetry, maps threats to the MITRE ATT&CK framework (`T1046`, `T1110`, `T1190`, `T1498`), and suggests prioritized mitigations without sending data off-site.
-- **📄 Automated PDF & JSON Incident Briefings**: One-click generation of branded, audit-ready security reports.
+
+---
+
+## 👑 ADMIN-END GUIDE (Central SOC Master)
+
+The **Admin End** hosts the central database, central API server, Ollama AI Security Analyst, and Master SOC Dashboard.
+
+### 1. Starting the Central Admin Server & SOC Dashboard
+```bash
+# Clone the repository on your Central PC
+git clone https://github.com/JEFFERSON-007/PRISM-IDS.git
+cd PRISM-IDS
+
+# Launch entire platform in 1 click using Docker
+docker-compose up --build -d
+```
+*Alternatively, start natively using `python -m uvicorn app.main:app --reload` and `npm run dev` inside `prism-dashboard`.*
+
+### 2. Accessing the Admin Master Dashboard
+- Open **http://localhost:5173** (or **`http://<YOUR_ADMIN_IP>:5173`** from any device on your network).
+- **Agent Fleet Tab**: View all connected target devices in real-time alongside your primary **Admin Central HQ Server**.
+- **Live Security Alerts**: View live threats streaming over WebSockets from any monitored device.
+- **AI Analyst Investigation**: Click the **Blue Eye Button (👁️)** on any alert to trigger local LLM threat analysis, MITRE ATT&CK mapping (`T1498`, `T1046`), and firewall block suggestions.
+
+---
+
+## 👨‍💻 USER-END GUIDE (Target Device Sensor)
+
+The **User End** is installed on any workstation, laptop, or server you want to monitor.
+
+### 1. Build the Standalone `.exe` (On Admin PC)
+Run this command on your main Admin computer:
+```bash
+cd prism-agent
+python build_exe.py
+```
+This auto-detects your Admin PC's IP address (`http://<ADMIN_IP>:8000`) and generates **`prism-agent/dist/prism-agent.exe`** and **`.env.agent`**.
+
+### 2. Deploy to User / Target Computers
+1. Copy **`prism-agent.exe`** and **`.env.agent`** onto a USB flash drive or transfer across the network to the target computer.
+2. On the target computer, right-click **`prism-agent.exe`** and select **"Run as Administrator"** *(Required for network card packet capture privileges)*.
+
+### 3. What the User Machine Does Automatically:
+- **Zero Configuration**: No Python, Git, or manual configuration required on target machines.
+- **Silent Background Telemetry**: Reads machine hostname (e.g., `FINANCE-LAPTOP`), local IP, and hardware specs, then registers automatically with your Central Admin Server.
+- **Real-Time Protection**: Continuously analyzes local packet traffic using Scapy + Random Forest ML and streams threat telemetry back to your Admin Dashboard!
 
 ---
 
@@ -70,27 +115,6 @@
                   |      PRISM React 19 SOC Dashboard (Vite / Tailwind CSS)     |
                   +-------------------------------------------------------------+
 ```
-
----
-
-## 🔥 Key Features
-
-### 1. Network Telemetry & Packet Engine
-- **BPF Capture Filtering**: Real-time packet acquisition using Scapy with raw socket listener threads.
-- **Canonical 5-Tuple Flow Tracker**: Tracks `(src_ip, dst_ip, src_port, dst_port, protocol)` bi-directionally with active/idle expiration sweeps.
-- **Entropy & Statistical Metrics**: Computes packet length variance, TCP flag ratios (SYN, ACK, FIN, RST, PSH, URG), and Shannon Entropy ($H(X)$) across flow payloads.
-
-### 2. Hybrid Threat Detection & Risk Engine
-- **Signature Engine**: Evaluates configurable JSON rules (`rules/signature_rules.json`) matching pattern strings, header constraints, and protocol anomalies.
-- **Scikit-Learn ML Model**: Evaluates extracted 24-feature vectors using a Random Forest classifier (`joblib` model format).
-- **Confidence Fusion**: Merges signature and ML detection outputs into normalized Risk Scores ($0-100$).
-- **Alert Deduplication**: Deduplicates repeating alerts within a sliding time-window to prevent SOC alert fatigue.
-
-### 3. AI Security Analyst (Ollama `qwen2.5:3b`)
-- **Strict SOC L3 System Prompt**: Operates with explicit instructions never to classify traffic, focusing solely on explanation and recommendation.
-- **MITRE ATT&CK Mapping**: Maps detected threat behaviors to standardized MITRE tactics and techniques.
-- **Response Caching**: `LLMCache` eliminates duplicate LLM calls for recurring alert patterns.
-- **SSE Streaming Chat**: Real-time token streaming interface (`POST /api/ai/chat?stream=true`).
 
 ---
 
@@ -201,29 +225,6 @@ You can deploy the `prism-agent` sensor to any number of remote computers, cloud
  (Windows Laptop / Office)     (Linux Web Gateway / Cloud)    (Database Server / Local)
 ```
 
-### Remote Agent Deployment Steps:
-
-1. **Find Central Server IP**:
-   Find the IP address of the machine running your Central PRISM Server (`ipconfig` on Windows or `ifconfig` on Linux, e.g. `192.168.1.50`).
-
-2. **Copy Agent to Target Machine**:
-   Copy or clone the `prism-agent/` directory to the remote machine you wish to monitor.
-
-3. **Configure Central Server URL**:
-   On the remote machine, open `prism-agent/.env.agent` and point `SERVER_URL` to your Central Server:
-   ```env
-   AGENT_NAME="remote-server-gateway"
-   SERVER_URL="http://192.168.1.50:8000"
-   ```
-
-4. **Start Remote Agent Sensor**:
-   On the remote machine, run:
-   ```bash
-   cd prism-agent
-   python -m pip install -r requirements.txt
-   python -m agent.main
-   ```
-
 ---
 
 ## 📦 Standalone Windows `.exe` Agent Build
@@ -235,16 +236,6 @@ You can bundle the sensor agent into a **single 34 MB standalone Windows `.exe` 
 cd prism-agent
 python build_exe.py
 ```
-
-`build_exe.py` will:
-1. **Auto-Detect Central Server IP**: Automatically queries your active network interface and retrieves your local IP address (e.g. `http://10.3.2.16:8000`).
-2. **Auto-Configure `.env.agent`**: Pre-configures the agent configuration with your Central Server IP.
-3. **Bundle ML & Rules**: Bundles Python runtime, Scapy, Scikit-learn, Random Forest model, and threat rules into `prism-agent/dist/prism-agent.exe`.
-
-### 🚀 Deploying to Any Windows Computer:
-1. Copy `prism-agent.exe` and `.env.agent` to the target Windows computer.
-2. Right-click `prism-agent.exe` and select **"Run as Administrator"** *(Required for network packet capture privileges)*.
-3. The target machine will automatically register its unique hostname and start streaming live telemetry and threat alerts directly to your Master SOC Dashboard!
 
 ---
 
@@ -258,74 +249,15 @@ The PRISM AI Analyst endpoints expose local LLM capabilities via `/api/ai/*`:
 ```http
 GET /api/ai/health
 ```
-**Response:**
-```json
-{
-  "online": true,
-  "model_name": "qwen2.5:3b",
-  "model_available": true,
-  "loaded": true,
-  "available_models": ["qwen2.5:3b"]
-}
-```
 
 #### 2. Alert Explanation & MITRE Mapping
 ```http
 POST /api/ai/alert/{alert_id}/summary
 ```
-**Response:**
-```json
-{
-  "alert_id": "ALT-2026-8842",
-  "executive_summary": "High-severity SYN Flood Denial of Service attack targeting Web Gateway.",
-  "technical_explanation": "Source host 192.168.1.100 initiated 4,500 SYN packets per second without completing TCP handshakes.",
-  "trigger_rationale": "High Risk Score (92.5/100) triggered by SYN ratio exceeding 0.95 and high entropy payload.",
-  "risk_assessment": "CRITICAL. Immediate risk of web gateway exhaustion and legitimate client connection drops.",
-  "mitre_attack_mapping": [
-    {
-      "tactic": "Impact",
-      "technique_id": "T1498",
-      "technique_name": "Network Denial of Service",
-      "description": "Adversaries may perform Network DoS attacks to degrade or disrupt availability."
-    }
-  ],
-  "remediation_actions": [
-    {
-      "priority": 1,
-      "action_type": "BLOCK_IP",
-      "title": "Enforce Perimeter Firewall Drop Rule",
-      "details": "iptables -A INPUT -s 192.168.1.100 -j DROP"
-    }
-  ],
-  "investigation_steps": [
-    "Verify whether source IP 192.168.1.100 belongs to an internal compromised host.",
-    "Inspect upstream router netflow logs for spoofing indicators."
-  ],
-  "cached": false
-}
-```
 
 #### 3. Interactive Analyst Chat (SSE Streaming)
 ```http
 POST /api/ai/chat
-Content-Type: application/json
-
-{
-  "prompt": "How should I mitigate this SYN Flood alert?",
-  "alert_id": "ALT-2026-8842",
-  "stream": false
-}
-```
-
-#### 4. Executive Security Report
-```http
-POST /api/ai/report
-Content-Type: application/json
-
-{
-  "timeframe": "24h",
-  "top_limit": 5
-}
 ```
 
 ---
@@ -337,56 +269,8 @@ Content-Type: application/json
 | **`failed to connect to docker API... daemon not running`** | Docker Desktop application is closed. | Launch **Docker Desktop** from Windows Start Menu and wait until engine status turns green. |
 | **`Connect call failed ('127.0.0.1', 5432)`** | PostgreSQL database service is stopped. | Run `docker-compose up -d postgres` or start `postgresql-x64-16` in Windows Services. |
 | **`'vite' is not recognized as an internal command`** | Node packages not installed in `prism-dashboard`. | Run `npm.cmd install` (or `npm install`) inside `prism-dashboard` folder first. |
-| **`Select an app to open 'npm'` popup** | Windows file association for `.cmd` files. | Use `npm.cmd run dev` or `npx vite` in Windows Command Prompt/PowerShell. |
 | **`ModuleNotFoundError: No module named 'agent'`** | Python current directory import path issue. | Run `python -m agent.main` from inside the `prism-agent` directory. |
-| **`ollama: command not found`** | Ollama binary not installed on host. | Install from [ollama.com](https://ollama.com/). *Note: PRISM IDS automatically falls back to internal rules if Ollama is absent.* |
 | **Scapy Packet Capture Permission Error** | Non-Administrator privileges on Windows/Linux. | Right-click terminal / `prism-agent.exe` and select **"Run as Administrator"** (or use `sudo` on Linux). |
-
----
-
-## 🛠️ Technology Stack
-
-```
-================================================================================================
-LAYER               TECHNOLOGIES UTILIZED
-================================================================================================
-Sensor Agent        Python 3.12+, Scapy, Pydantic v2, HTTPX, Scikit-Learn, Joblib, Structlog
-Backend Core        FastAPI, Async SQLAlchemy 2.0, PostgreSQL 16, Asyncpg, Alembic, PyJWT, Passlib
-Frontend SOC        React 19, TypeScript 5, Vite, Tailwind CSS, Recharts, Zustand, Sonner, Axios
-AI Analyst          Ollama API Runtime, Qwen2.5:3b Model, HTTPX Async, In-Memory LLMCache
-DevOps & CI/CD      Docker, Docker Compose, NGINX, GitHub Actions CI/CD Pipeline, Pytest
-================================================================================================
-```
-
----
-
-## 🧪 Running Unit & Integration Tests
-
-```bash
-# Run Server Unit Tests
-PYTHONPATH=. pytest tests/unit/
-
-# Run Agent Sensor Tests
-cd prism-agent
-PYTHONPATH=. pytest tests/
-
-# Run Full End-to-End Pipeline Integration Test
-PYTHONPATH=. pytest tests/integration/test_e2e_pipeline.py
-```
-
----
-
-## 📖 Documentation Suite
-
-Comprehensive technical documentation is maintained in the [`docs/`](docs) folder:
-
-- 📘 **[Architecture Guide](docs/ArchitectureGuide.md)**: Deep dive into 5-tuple tracking, feature extraction formulas, and system data flows.
-- 📙 **[Deployment Guide](docs/DeploymentGuide.md)**: Hardened production setup using NGINX, TLS, PostgreSQL tuning, and systemd daemons.
-- 📗 **[Developer Guide](docs/DeveloperGuide.md)**: Coding standards, Clean Architecture rules, and repository patterns.
-- 📕 **[Installation Guide](docs/InstallationGuide.md)**: Bare-metal and containerized step-by-step deployment instructions.
-- 📓 **[Operations Manual](docs/OperationsManual.md)**: Incident response runbooks, backup procedures, and monitoring alerts.
-- 🛡️ **[Security Guide](docs/SecurityGuide.md)**: RBAC permission matrices, rate limiting thresholds, and secret storage rules.
-- 📋 **[Threat Model](docs/ThreatModel.md)**: STRIDE threat modeling analysis and risk mitigations.
 
 ---
 
