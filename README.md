@@ -15,7 +15,7 @@
 
 *An Enterprise-Grade, Real-Time Intrusion Detection System & Security Operations Center (SOC) Platform powered by Hybrid Signature + Scikit-Learn Random Forest ML Engines, Scapy Network Sensors, and Local Ollama AI Security Analyst (`qwen2.5:3b`).*
 
-[Architecture](#-system-architecture) • [Admin Guide](#-admin-end-guide-central-soc-master) • [User Guide](#-user-end-guide-target-device-sensor) • [Deployment](#-getting-started--deployment) • [Executable (.exe)](#-standalone-windows-exe-agent-build) • [AI Analyst](#-ai-security-analyst-ollama) • [Troubleshooting](#-troubleshooting--faq)
+[Architecture](#-system-architecture) • [AI Analyst Role](#-ai-security-analyst-how-it-works--whats-its-use) • [Admin Guide](#-admin-end-guide-central-soc-master) • [User Guide](#-user-end-guide-target-device-sensor) • [Deployment](#-getting-started--deployment) • [Executable (.exe)](#-standalone-windows-exe-agent-build) • [Troubleshooting](#-troubleshooting--faq)
 
 </div>
 
@@ -25,13 +25,47 @@
 
 **PRISM IDS** is a high-performance cyber threat detection platform engineered for modern enterprise environments. It combines raw packet acquisition, canonical 5-tuple flow generation, 24-dimensional feature extraction, dual signature & Scikit-Learn Random Forest Machine Learning detection, normalized risk scoring ($0-100$), and automated threat deduplication into a unified security operations platform.
 
-### 🌟 Key Highlights
-- **⚡ High-Throughput Packet Sensor Pipeline**: Multithreaded Scapy packet capture daemon with BPF filtering, async bounded queues, and zero packet drop under heavy network load.
-- **🧠 Embedded Random Forest Machine Learning Model**: Evaluates 24-dimensional network flow feature vectors (packet inter-arrival times, payload Shannon Entropy $H(X)$, TCP flag ratios) to catch zero-day anomaly attacks.
-- **🛡️ Hybrid Confidence Fusion Engine**: Merges deterministic signature rules (`rules/signature_rules.json`) with ML probabilities into normalized Risk Scores ($0-100$).
-- **📊 Real-Time Obsidian SOC Dashboard**: A React 19 + TypeScript + Vite dashboard featuring glassmorphic UI cards, live WebSocket alert streaming, and Recharts threat analytics.
-- **🌐 Zero-Config Standalone Windows Executable Generator**: Auto-detects Central Server IP address and compiles a 34 MB self-contained `prism-agent.exe` ready to monitor any computer on your network.
-- **🤖 Local Ollama AI Security Analyst (`qwen2.5:3b`)**: Local LLM assistant that explains attack telemetry, maps threats to the MITRE ATT&CK framework (`T1046`, `T1110`, `T1190`, `T1498`), and suggests prioritized mitigations without sending data off-site.
+---
+
+## 🤖 AI SECURITY ANALYST: HOW IT WORKS & WHAT'S ITS USE
+
+The **AI Security Analyst** is powered by a local Large Language Model (**Ollama `qwen2.5:3b`**) integrated directly into the PRISM Central Server (`app/llm/`).
+
+### 💡 Why is the AI Used? (Purpose & Business Impact)
+Raw Intrusion Detection System logs consist of complex numerical data: TCP flag ratios, BPF bytecode, packet rate variances, and Shannon entropy values ($H(X)$). Interpreting these numbers usually requires senior Level-3 cybersecurity specialists. 
+
+The AI Security Analyst acts as an **always-on Level-3 SOC Security Analyst**:
+- **Translates Technical Logs into Human Language**: Explains complex network attacks in plain, executive-friendly English.
+- **100% Privacy & On-Premises Control**: Runs **100% locally** via Ollama. No IP addresses, network telemetry, or private data ever leave your central server.
+- **Standardized Threat Mapping**: Automatically maps detected anomalies to official **MITRE ATT&CK** industry frameworks.
+- **Instant Incident Remediation**: Provides copy-paste firewall rules (e.g. `iptables` or Windows Firewall commands) so system administrators can block attacks in seconds.
+
+---
+
+### 🎯 Key Capabilities & Use Cases
+
+#### 1. Real-Time Threat Briefings (`POST /api/ai/alert/{alert_id}/summary`)
+When an administrator clicks **"AI Analyze (👁️)"** on any live alert, the AI analyzes the alert payload and generates:
+- **Executive Summary**: High-level overview of the incident.
+- **Technical Root Cause**: Specific explanation of why the threshold was crossed (e.g. *"Host 192.168.1.50 sent 4,500 SYN packets/sec without completing handshakes"*).
+- **MITRE ATT&CK Mapping**: Identifies the exact tactic and technique ID (e.g. `T1498 Network Denial of Service`, `T1046 Network Service Discovery`, `T1110 Brute Force`, `T1190 Exploit Public-Facing Application`).
+- **Remediation Action Plan**: Step-by-step containment instructions and ready-to-run firewall command strings.
+
+#### 2. Interactive SOC Chat Assistant (`POST /api/ai/chat`)
+An interactive streaming chat interface (`POST /api/ai/chat?stream=true`) that lets administrators talk directly with the AI:
+- Ask follow-up questions: *"How do I harden my web server against this SYN flood?"* or *"What other ports were probed?"*.
+- Receive live real-time token streaming responses on the dashboard.
+
+#### 3. Executive PDF & JSON Security Reports (`POST /api/ai/report`)
+Generates comprehensive audit-ready incident reports summarizing top attacking IPs, target hosts, threat distribution, and recommended long-term security posture improvements for management.
+
+---
+
+### ⚙️ How the AI Operates Under the Hood
+
+1. **Strict L3 SOC Analyst Persona Prompt**: System prompts constrain the model to operate as a senior security specialist, guaranteeing high-precision technical answers.
+2. **In-Memory `LLMCache`**: Hashes alert telemetry signatures so duplicate/recurring attack patterns receive **instant 0ms cached responses** without wasting CPU cycles.
+3. **Graceful Fallback Resilience**: If Ollama is turned off or not installed, PRISM IDS automatically falls back to deterministic rule-based threat descriptions so the system never crashes.
 
 ---
 
@@ -150,81 +184,6 @@ ollama pull qwen2.5:3b
 docker-compose up --build -d
 ```
 
-#### 3. Access Services
-| Service | URL | Description |
-| :--- | :--- | :--- |
-| **SOC Dashboard** | `http://localhost` | React 19 Frontend Dashboard |
-| **FastAPI Backend** | `http://localhost:8000` | REST API Server Core |
-| **Swagger API Docs** | `http://localhost:8000/docs` | Interactive OpenAPI Documentation |
-| **AI Analyst Health** | `http://localhost:8000/api/ai/health` | Ollama LLM Connection Status |
-| **WebSocket Stream** | `ws://localhost:8000/ws/v1/connect` | Live Event Streaming Endpoint |
-
----
-
-### 💻 Method 2: Native Standalone Run (Local Terminal Windows)
-
-If you prefer to run services directly on your host machine without Docker containers:
-
-#### 1. Start Database (PostgreSQL 16)
-- **Option A (Docker database only)**: `docker-compose up -d postgres`
-- **Option B (Windows Native PostgreSQL)**: Ensure `postgresql-x64-16` service is running in Windows Services.
-
-#### 2. Start FastAPI Backend Server (Terminal 1)
-```bash
-# Navigate to project root
-cd PRISM-IDS
-
-# Install server dependencies
-python -m pip install -r requirements.txt
-
-# Start backend server
-python -m uvicorn app.main:app --reload --port 8000
-```
-
-#### 3. Start React SOC Dashboard (Terminal 2)
-```bash
-# Navigate to dashboard directory
-cd PRISM-IDS/prism-dashboard
-
-# Install frontend node packages
-npm.cmd install   # On Windows (or 'npm install' on Linux/macOS)
-
-# Launch Vite development server
-npm.cmd run dev   # On Windows (or 'npm run dev' on Linux/macOS)
-```
-*Open **http://localhost:5173** in your browser.*
-
-#### 4. Start IDS Agent Network Sensor (Terminal 3)
-```bash
-# Navigate to agent directory
-cd PRISM-IDS/prism-agent
-
-# Install agent dependencies
-python -m pip install -r requirements.txt
-
-# Run the agent daemon
-python -m agent.main
-```
-
----
-
-## 📡 Monitoring Remote Devices (Multi-Agent Setup)
-
-You can deploy the `prism-agent` sensor to any number of remote computers, cloud servers, or Linux VMs to monitor all devices centrally on your Master SOC Dashboard!
-
-```
-                                Central SOC Dashboard
-                                          │
-                                          ▼
-                             Central PRISM FastAPI Server
-                              (http://192.168.1.50:8000)
-                                          ▲
-            ┌─────────────────────────────┼─────────────────────────────┐
-            │                             │                             │
-     Remote Agent 1                Remote Agent 2                Remote Agent 3
- (Windows Laptop / Office)     (Linux Web Gateway / Cloud)    (Database Server / Local)
-```
-
 ---
 
 ## 📦 Standalone Windows `.exe` Agent Build
@@ -235,29 +194,6 @@ You can bundle the sensor agent into a **single 34 MB standalone Windows `.exe` 
 ```bash
 cd prism-agent
 python build_exe.py
-```
-
----
-
-## 🤖 AI Security Analyst (Ollama)
-
-The PRISM AI Analyst endpoints expose local LLM capabilities via `/api/ai/*`:
-
-### Endpoints Overview
-
-#### 1. AI Health Check
-```http
-GET /api/ai/health
-```
-
-#### 2. Alert Explanation & MITRE Mapping
-```http
-POST /api/ai/alert/{alert_id}/summary
-```
-
-#### 3. Interactive Analyst Chat (SSE Streaming)
-```http
-POST /api/ai/chat
 ```
 
 ---
