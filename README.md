@@ -15,7 +15,7 @@
 
 *An Enterprise-Grade, Real-Time Intrusion Detection System & Security Operations Center (SOC) Platform powered by Hybrid Signature + Scikit-Learn Random Forest ML Engines, Scapy Network Sensors, and Local Ollama AI Security Analyst (`qwen2.5:3b`).*
 
-[Architecture](#-system-architecture) • [AI Analyst Role](#-ai-security-analyst-how-it-works--whats-its-use) • [Admin Guide](#-admin-end-guide-central-soc-master) • [User Guide](#-user-end-guide-target-device-sensor) • [Deployment](#-getting-started--deployment) • [Executable (.exe)](#-standalone-windows-exe-agent-build) • [Troubleshooting](#-troubleshooting--faq)
+[Architecture](#-system-architecture) • [User Windows App Guide](#-user-end-guide-windows-app-installation--configuration) • [Admin SOC Guide](#-admin-end-guide-central-soc-master) • [AI Analyst Role](#-ai-security-analyst-how-it-works--whats-its-use) • [Deployment](#-getting-started--deployment) • [Executable Build](#-standalone-windows-exe-agent-build) • [Troubleshooting](#-troubleshooting--faq)
 
 </div>
 
@@ -27,45 +27,91 @@
 
 ---
 
-## 🤖 AI SECURITY ANALYST: HOW IT WORKS & WHAT'S ITS USE
+## 👨‍💻 USER-END GUIDE (Windows App Installation & Configuration)
 
-The **AI Security Analyst** is powered by a local Large Language Model (**Ollama `qwen2.5:3b`**) integrated directly into the PRISM Central Server (`app/llm/`).
+The **User End App** (`prism-agent.exe`) is a lightweight standalone Windows executable installed on target computers, employee laptops, or servers that you want to monitor.
 
-### 💡 Why is the AI Used? (Purpose & Business Impact)
-Raw Intrusion Detection System logs consist of complex numerical data: TCP flag ratios, BPF bytecode, packet rate variances, and Shannon entropy values ($H(X)$). Interpreting these numbers usually requires senior Level-3 cybersecurity specialists. 
-
-The AI Security Analyst acts as an **always-on Level-3 SOC Security Analyst**:
-- **Translates Technical Logs into Human Language**: Explains complex network attacks in plain, executive-friendly English.
-- **100% Privacy & On-Premises Control**: Runs **100% locally** via Ollama. No IP addresses, network telemetry, or private data ever leave your central server.
-- **Standardized Threat Mapping**: Automatically maps detected anomalies to official **MITRE ATT&CK** industry frameworks.
-- **Instant Incident Remediation**: Provides copy-paste firewall rules (e.g. `iptables` or Windows Firewall commands) so system administrators can block attacks in seconds.
+### 📥 1. Direct Download
+- **`prism-agent.exe`**: [Download Standalone Executable (GitHub Direct)](https://github.com/JEFFERSON-007/PRISM-IDS/raw/main/prism-agent/dist/prism-agent.exe)
+- **`.env.agent`**: [Download Configuration File](https://github.com/JEFFERSON-007/PRISM-IDS/raw/main/prism-agent/.env.agent)
 
 ---
 
-### 🎯 Key Capabilities & Use Cases
+### 🚀 2. Step-by-Step Windows Installation Guide
 
-#### 1. Real-Time Threat Briefings (`POST /api/ai/alert/{alert_id}/summary`)
-When an administrator clicks **"AI Analyze (👁️)"** on any live alert, the AI analyzes the alert payload and generates:
-- **Executive Summary**: High-level overview of the incident.
-- **Technical Root Cause**: Specific explanation of why the threshold was crossed (e.g. *"Host 192.168.1.50 sent 4,500 SYN packets/sec without completing handshakes"*).
-- **MITRE ATT&CK Mapping**: Identifies the exact tactic and technique ID (e.g. `T1498 Network Denial of Service`, `T1046 Network Service Discovery`, `T1110 Brute Force`, `T1190 Exploit Public-Facing Application`).
-- **Remediation Action Plan**: Step-by-step containment instructions and ready-to-run firewall command strings.
+1. **Create Destination Folder**:
+   Create a dedicated folder on the target Windows computer (e.g. `C:\PRISM-Agent\`).
 
-#### 2. Interactive SOC Chat Assistant (`POST /api/ai/chat`)
-An interactive streaming chat interface (`POST /api/ai/chat?stream=true`) that lets administrators talk directly with the AI:
-- Ask follow-up questions: *"How do I harden my web server against this SYN flood?"* or *"What other ports were probed?"*.
-- Receive live real-time token streaming responses on the dashboard.
+2. **Paste Downloaded Files**:
+   Copy both **`prism-agent.exe`** and **`.env.agent`** into `C:\PRISM-Agent\`.
 
-#### 3. Executive PDF & JSON Security Reports (`POST /api/ai/report`)
-Generates comprehensive audit-ready incident reports summarizing top attacking IPs, target hosts, threat distribution, and recommended long-term security posture improvements for management.
+3. **Launch with Administrator Privileges**:
+   Right-click **`prism-agent.exe`** and select **"Run as Administrator"**.
+   > ⚠️ **Why Administrator Rights are Required**: Windows packet sniffing drivers (Scapy / Npcap) require elevated privileges to access raw network interface cards.
 
 ---
 
-### ⚙️ How the AI Operates Under the Hood
+### ⚙️ 3. Configuration Breakdown (`.env.agent`)
 
-1. **Strict L3 SOC Analyst Persona Prompt**: System prompts constrain the model to operate as a senior security specialist, guaranteeing high-precision technical answers.
-2. **In-Memory `LLMCache`**: Hashes alert telemetry signatures so duplicate/recurring attack patterns receive **instant 0ms cached responses** without wasting CPU cycles.
-3. **Graceful Fallback Resilience**: If Ollama is turned off or not installed, PRISM IDS automatically falls back to deterministic rule-based threat descriptions so the system never crashes.
+The **`.env.agent`** file controls how the sensor communicates with your Central Admin Server:
+
+```env
+# ==============================================================================
+# PRISM IDS Sensor Agent Configuration
+# ==============================================================================
+
+# Custom sensor name (Leave default to automatically use Windows Hostname e.g. DESKTOP-FINANCE)
+AGENT_NAME="remote-agent-sensor"
+
+# Central Admin Server URL (Auto-detected during build or manually set to your server IP)
+SERVER_URL="http://10.3.2.16:8000"
+
+# Heartbeat Telemetry interval in seconds (Reports CPU/RAM health to Admin Dashboard)
+HEARTBEAT_INTERVAL=15
+
+# Automatic server reconnection retry interval in seconds
+RECONNECT_INTERVAL=5
+
+# HTTP API request timeout in seconds
+HTTP_TIMEOUT=10.0
+
+# Local credentials storage file
+CREDENTIALS_FILE=".agent_credentials.json"
+
+# Logging configuration
+LOG_LEVEL="INFO"
+LOG_FORMAT="json"
+LOG_DIR="logs"
+DEBUG=true
+TIMEZONE="UTC"
+```
+
+| Configuration Parameter | Default Value | Purpose |
+| :--- | :--- | :--- |
+| **`SERVER_URL`** | `http://<ADMIN_IP>:8000` | Points to your Central Admin Server IP address. |
+| **`AGENT_NAME`** | `remote-agent-sensor` | Custom display name. If default, automatically uses machine hostname (e.g. `DESKTOP-8492AK`). |
+| **`HEARTBEAT_INTERVAL`** | `15` | Frequency (seconds) of sending CPU, RAM, and Disk health metrics to the Dashboard. |
+| **`RECONNECT_INTERVAL`**| `5` | Retry delay (seconds) if connection to Central Server drops. |
+| **`CAPTURE_ENABLED`** | `true` | Enables real-time Scapy network packet capture. |
+
+---
+
+### 🔁 4. Run Automatically at Windows Startup (Optional)
+
+To ensure `prism-agent.exe` starts automatically every time the Windows PC boots up:
+
+1. Press `Win + R`, type **`taskschd.msc`**, and press Enter.
+2. Click **Create Task** on the right sidebar.
+3. Under **General**:
+   - Name: `PRISM-IDS-Agent`
+   - Check **"Run with highest privileges"** *(Required for admin rights)*.
+4. Under **Triggers**:
+   - New Trigger → Begin the task: **At startup** (or **At log on**).
+5. Under **Actions**:
+   - Action: **Start a program**
+   - Program/script: Browse to `C:\PRISM-Agent\prism-agent.exe`
+   - Start in: `C:\PRISM-Agent\`
+6. Click **OK**. The agent will now run silently in the background every time Windows turns on!
 
 ---
 
@@ -92,26 +138,18 @@ docker-compose up --build -d
 
 ---
 
-## 👨‍💻 USER-END GUIDE (Target Device Sensor)
+## 🤖 AI SECURITY ANALYST: HOW IT WORKS & WHAT'S ITS USE
 
-The **User End** is installed on any workstation, laptop, or server you want to monitor.
+The **AI Security Analyst** is powered by a local Large Language Model (**Ollama `qwen2.5:3b`**) integrated directly into the PRISM Central Server (`app/llm/`).
 
-### 1. Build the Standalone `.exe` (On Admin PC)
-Run this command on your main Admin computer:
-```bash
-cd prism-agent
-python build_exe.py
-```
-This auto-detects your Admin PC's IP address (`http://<ADMIN_IP>:8000`) and generates **`prism-agent/dist/prism-agent.exe`** and **`.env.agent`**.
+### 💡 Why is the AI Used? (Purpose & Business Impact)
+Raw Intrusion Detection System logs consist of complex numerical data: TCP flag ratios, BPF bytecode, packet rate variances, and Shannon entropy values ($H(X)$). Interpreting these numbers usually requires senior Level-3 cybersecurity specialists. 
 
-### 2. Deploy to User / Target Computers
-1. Copy **`prism-agent.exe`** and **`.env.agent`** onto a USB flash drive or transfer across the network to the target computer.
-2. On the target computer, right-click **`prism-agent.exe`** and select **"Run as Administrator"** *(Required for network card packet capture privileges)*.
-
-### 3. What the User Machine Does Automatically:
-- **Zero Configuration**: No Python, Git, or manual configuration required on target machines.
-- **Silent Background Telemetry**: Reads machine hostname (e.g., `FINANCE-LAPTOP`), local IP, and hardware specs, then registers automatically with your Central Admin Server.
-- **Real-Time Protection**: Continuously analyzes local packet traffic using Scapy + Random Forest ML and streams threat telemetry back to your Admin Dashboard!
+The AI Security Analyst acts as an **always-on Level-3 SOC Security Analyst**:
+- **Translates Technical Logs into Human Language**: Explains complex network attacks in plain, executive-friendly English.
+- **100% Privacy & On-Premises Control**: Runs **100% locally** via Ollama. No IP addresses, network telemetry, or private data ever leave your central server.
+- **Standardized Threat Mapping**: Automatically maps detected anomalies to official **MITRE ATT&CK** industry frameworks.
+- **Instant Incident Remediation**: Provides copy-paste firewall rules (e.g. `iptables` or Windows Firewall commands) so system administrators can block attacks in seconds.
 
 ---
 
