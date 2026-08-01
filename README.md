@@ -13,9 +13,9 @@
 
 <br/>
 
-*An Enterprise-Grade, Real-Time Intrusion Detection System & Security Operations Center (SOC) Platform powered by Hybrid Signature + ML Detection Engines, Scapy Network Sensors, and Local Ollama AI Security Analyst (`qwen2.5:3b`).*
+*An Enterprise-Grade, Real-Time Intrusion Detection System & Security Operations Center (SOC) Platform powered by Hybrid Signature + Scikit-Learn Random Forest ML Engines, Scapy Network Sensors, and Local Ollama AI Security Analyst (`qwen2.5:3b`).*
 
-[Architecture](#-system-architecture) • [Features](#-key-features) • [Deployment & Launch](#-getting-started--deployment) • [Remote Monitoring](#-monitoring-remote-devices-multi-agent) • [Executable (.exe) Build](#-standalone-windows-exe-agent-build) • [AI Analyst](#-ai-security-analyst-ollama) • [Troubleshooting](#-troubleshooting--faq) • [Documentation](#-documentation-suite)
+[Architecture](#-system-architecture) • [Features](#-key-features) • [Deployment & Launch](#-getting-started--deployment) • [Remote Monitoring](#-monitoring-remote-devices-multi-agent) • [Standalone Executable (.exe)](#-standalone-windows-exe-agent-build) • [AI Analyst](#-ai-security-analyst-ollama) • [Troubleshooting](#-troubleshooting--faq) • [Documentation](#-documentation-suite)
 
 </div>
 
@@ -23,15 +23,16 @@
 
 ## 👁️ System Overview
 
-**PRISM IDS** is an end-to-end cyber threat detection platform engineered for modern enterprise environments. It combines high-throughput raw packet capture, 5-tuple flow generation, statistical feature extraction, dual signature & Random Forest Machine Learning detection, risk score normalization, and automated threat deduplication into a unified security monitoring platform.
+**PRISM IDS** is a high-performance cyber threat detection platform engineered for modern enterprise environments. It combines raw packet acquisition, canonical 5-tuple flow generation, 24-dimensional feature extraction, dual signature & Scikit-Learn Random Forest Machine Learning detection, normalized risk scoring ($0-100$), and automated threat deduplication into a unified security operations platform.
 
 ### 🌟 Key Highlights
-- **⚡ High-Performance Sensor Pipeline**: Multithreaded Scapy packet capture daemon with BPF filtering, async bounded queues, and zero packet drop under heavy load.
-- **🧠 Hybrid Detection Fusion**: Combines deterministic signature matching (`rules/signature_rules.json`) with an offline-trained Scikit-learn Random Forest model.
+- **⚡ High-Throughput Packet Sensor Pipeline**: Multithreaded Scapy packet capture daemon with BPF filtering, async bounded queues, and zero packet drop under heavy network load.
+- **🧠 Embedded Random Forest Machine Learning Model**: Evaluates 24-dimensional network flow feature vectors (packet inter-arrival times, payload Shannon Entropy $H(X)$, TCP flag ratios) to catch zero-day anomaly attacks.
+- **🛡️ Hybrid Confidence Fusion Engine**: Merges deterministic signature rules (`rules/signature_rules.json`) with ML probabilities into normalized Risk Scores ($0-100$).
 - **📊 Real-Time Obsidian SOC Dashboard**: A React 19 + TypeScript + Vite dashboard featuring glassmorphic UI cards, live WebSocket alert streaming, and Recharts threat analytics.
-- **🌐 Centralized Multi-Agent Monitoring**: Deploy lightweight sensor agents onto any number of remote machines (Windows, Linux, Cloud VMs) pointing back to your Central Server.
-- **🤖 Local Ollama AI Analyst (`qwen2.5:3b`)**: Local LLM assistant that explains attack telemetry, maps threats to MITRE ATT&CK framework (`T1046`, `T1110`, `T1190`, `T1498`), and suggests prioritized mitigations without sending data off-site.
-- **📄 Automated PDF Incident Briefings**: One-click generation of branded, audit-ready security reports.
+- **🌐 Zero-Config Standalone Windows Executable Generator**: Auto-detects Central Server IP address and compiles a 34 MB self-contained `prism-agent.exe` ready to monitor any computer on your network.
+- **🤖 Local Ollama AI Security Analyst (`qwen2.5:3b`)**: Local LLM assistant that explains attack telemetry, maps threats to the MITRE ATT&CK framework (`T1046`, `T1110`, `T1190`, `T1498`), and suggests prioritized mitigations without sending data off-site.
+- **📄 Automated PDF & JSON Incident Briefings**: One-click generation of branded, audit-ready security reports.
 
 ---
 
@@ -46,9 +47,9 @@
                                                  v
                                   (5-Tuple Flow Engine O(1))
                                                  v
-                                (Feature Vector Extraction)
+                                (24-Feature Vector Extraction)
                                                  v
-                              (Hybrid Signature + ML Classifier)
+                               (Hybrid Signature + ML Classifier)
                                                  v
                                  (Risk Score Normalizer 0-100)
                                                  |
@@ -77,11 +78,11 @@
 ### 1. Network Telemetry & Packet Engine
 - **BPF Capture Filtering**: Real-time packet acquisition using Scapy with raw socket listener threads.
 - **Canonical 5-Tuple Flow Tracker**: Tracks `(src_ip, dst_ip, src_port, dst_port, protocol)` bi-directionally with active/idle expiration sweeps.
-- **Entropy & Statistical Metrics**: Computes packet length variance, TCP flag ratios, and Shannon Entropy ($H(X)$) across flow payloads.
+- **Entropy & Statistical Metrics**: Computes packet length variance, TCP flag ratios (SYN, ACK, FIN, RST, PSH, URG), and Shannon Entropy ($H(X)$) across flow payloads.
 
 ### 2. Hybrid Threat Detection & Risk Engine
-- **Signature Engine**: Evaluates configurable JSON rules (`signature_rules.json`) matching pattern strings, header constraints, and protocol anomalies.
-- **Scikit-Learn ML Model**: Evaluates extracted 24-feature vectors using a Random Forest classifier.
+- **Signature Engine**: Evaluates configurable JSON rules (`rules/signature_rules.json`) matching pattern strings, header constraints, and protocol anomalies.
+- **Scikit-Learn ML Model**: Evaluates extracted 24-feature vectors using a Random Forest classifier (`joblib` model format).
 - **Confidence Fusion**: Merges signature and ML detection outputs into normalized Risk Scores ($0-100$).
 - **Alert Deduplication**: Deduplicates repeating alerts within a sliding time-window to prevent SOC alert fatigue.
 
@@ -188,16 +189,16 @@ python -m agent.main
 You can deploy the `prism-agent` sensor to any number of remote computers, cloud servers, or Linux VMs to monitor all devices centrally on your Master SOC Dashboard!
 
 ```
-                               Central SOC Dashboard
-                                         │
-                                         ▼
-                            Central PRISM FastAPI Server
-                             (http://192.168.1.50:8000)
-                                         ▲
-           ┌─────────────────────────────┼─────────────────────────────┐
-           │                             │                             │
-    Remote Agent 1                Remote Agent 2                Remote Agent 3
-(Windows Laptop / Office)     (Linux Web Gateway / Cloud)    (Database Server / Local)
+                                Central SOC Dashboard
+                                          │
+                                          ▼
+                             Central PRISM FastAPI Server
+                              (http://192.168.1.50:8000)
+                                          ▲
+            ┌─────────────────────────────┼─────────────────────────────┐
+            │                             │                             │
+     Remote Agent 1                Remote Agent 2                Remote Agent 3
+ (Windows Laptop / Office)     (Linux Web Gateway / Cloud)    (Database Server / Local)
 ```
 
 ### Remote Agent Deployment Steps:
@@ -227,20 +228,23 @@ You can deploy the `prism-agent` sensor to any number of remote computers, cloud
 
 ## 📦 Standalone Windows `.exe` Agent Build
 
-You can bundle the sensor agent into a **single standalone Windows `.exe` file** (`prism-agent.exe`) that requires **NO Python or Git installation** on target systems!
+You can bundle the sensor agent into a **single 34 MB standalone Windows `.exe` file** (`prism-agent.exe`) that requires **NO Python or Git installation** on target systems!
 
-### How to Build `prism-agent.exe`:
+### ⚙️ How to Build `prism-agent.exe`:
 ```bash
 cd prism-agent
 python build_exe.py
 ```
 
-This creates `prism-agent/dist/prism-agent.exe`. 
+`build_exe.py` will:
+1. **Auto-Detect Central Server IP**: Automatically queries your active network interface and retrieves your local IP address (e.g. `http://10.3.2.16:8000`).
+2. **Auto-Configure `.env.agent`**: Pre-configures the agent configuration with your Central Server IP.
+3. **Bundle ML & Rules**: Bundles Python runtime, Scapy, Scikit-learn, Random Forest model, and threat rules into `prism-agent/dist/prism-agent.exe`.
 
-### Deploying to Any Windows PC:
-1. Copy `prism-agent.exe` and `.env.agent` to the target Windows PC.
-2. Edit `.env.agent` on the target PC to point `SERVER_URL` to your Central Server IP (`http://YOUR_SERVER_IP:8000`).
-3. Double click `prism-agent.exe` (or run as Administrator) to start monitoring instantly!
+### 🚀 Deploying to Any Windows Computer:
+1. Copy `prism-agent.exe` and `.env.agent` to the target Windows computer.
+2. Right-click `prism-agent.exe` and select **"Run as Administrator"** *(Required for network packet capture privileges)*.
+3. The target machine will automatically register its unique hostname and start streaming live telemetry and threat alerts directly to your Master SOC Dashboard!
 
 ---
 
@@ -336,6 +340,7 @@ Content-Type: application/json
 | **`Select an app to open 'npm'` popup** | Windows file association for `.cmd` files. | Use `npm.cmd run dev` or `npx vite` in Windows Command Prompt/PowerShell. |
 | **`ModuleNotFoundError: No module named 'agent'`** | Python current directory import path issue. | Run `python -m agent.main` from inside the `prism-agent` directory. |
 | **`ollama: command not found`** | Ollama binary not installed on host. | Install from [ollama.com](https://ollama.com/). *Note: PRISM IDS automatically falls back to internal rules if Ollama is absent.* |
+| **Scapy Packet Capture Permission Error** | Non-Administrator privileges on Windows/Linux. | Right-click terminal / `prism-agent.exe` and select **"Run as Administrator"** (or use `sudo` on Linux). |
 
 ---
 
