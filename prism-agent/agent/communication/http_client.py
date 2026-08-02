@@ -14,9 +14,18 @@ class AgentHTTPClient:
     """HTTP client wrapping httpx.AsyncClient with automatic agent header injection and retry logic."""
 
     def __init__(self, base_url: Optional[str] = None) -> None:
-        self.base_url = base_url or agent_settings.SERVER_URL
+        self._custom_base_url = base_url
         self.agent_id: Optional[str] = None
         self.secret_key: Optional[str] = None
+
+    @property
+    def base_url(self) -> str:
+        """Dynamic base URL evaluating active server settings."""
+        return self._custom_base_url or agent_settings.SERVER_URL
+
+    @base_url.setter
+    def base_url(self, value: str) -> None:
+        self._custom_base_url = value
 
     def set_credentials(self, agent_id: str, secret_key: str) -> None:
         """Configure agent authentication credentials."""

@@ -15,10 +15,15 @@ class AgentWebSocketClient:
     """Manages persistent WebSocket connection to PRISM Server with auto-reconnect."""
 
     def __init__(self, ws_url: Optional[str] = None) -> None:
-        self.ws_url = ws_url or agent_settings.WS_URL
+        self._custom_ws_url = ws_url
         self._running: bool = False
         self._ws: Optional[websockets.WebSocketClientProtocol] = None
         self._message_handler: Optional[Callable[[Dict[str, Any]], None]] = None
+
+    @property
+    def ws_url(self) -> str:
+        """Dynamic WebSocket URL evaluating active server settings."""
+        return self._custom_ws_url or agent_settings.WS_URL or "ws://localhost:8000/ws/v1/connect"
 
     def set_message_handler(self, handler: Callable[[Dict[str, Any]], None]) -> None:
         """Register a callback for incoming server WebSocket messages."""
@@ -44,8 +49,9 @@ class AgentWebSocketClient:
         """Connection loop attempting reconnects on disconnect."""
         while self._running:
             try:
-                logger.info("Connecting to PRISM Server WebSocket", url=self.ws_url)
-                async with websockets.connect(self.ws_url) as ws:
+                url = self.ws_url
+                logger.info("Connecting to PRISM Server WebSocket", url=url)
+                async with websockets.connect(url) as ws:
                     self._ws = ws
                     agent_state.websocket_connected = True
                     logger.info("WebSocket connection established successfully")

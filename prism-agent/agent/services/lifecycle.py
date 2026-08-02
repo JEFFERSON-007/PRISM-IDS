@@ -1,6 +1,8 @@
-"""Agent Daemon Startup and Shutdown Lifecycle Orchestrator."""
+"""Agent Daemon Startup and Shutdown Lifecycle Orchestrator with Resilient Auto-Registration and System Failover."""
 
 import asyncio
+import os
+import sys
 from typing import Optional
 import structlog
 from agent.authentication.credentials_store import CredentialsStore
@@ -36,7 +38,7 @@ class AgentLifecycleManager:
         self._shutdown_event = asyncio.Event()
 
     async def initialize_and_start(self) -> None:
-        """Sequential startup lifecycle."""
+        """Sequential startup lifecycle with resilient registration and fault isolation."""
         # 1. Setup Logging
         setup_agent_logging()
         logger.info(
@@ -56,7 +58,9 @@ class AgentLifecycleManager:
             agent_state.is_authenticated = True
         else:
             logger.info("No credentials found. Initiating registration with PRISM Server...")
-            await self._register_with_server()
+            registered = await self._resilient_registration_flow()
+            if not registered:
+                logger.warning("Initial server registration pending. Will continue retrying in background loop.")
 
         # 3. Start background telemetry Heartbeat Service
         await self.heartbeat_service.start()
@@ -68,7 +72,10 @@ class AgentLifecycleManager:
                 self.capture_engine.start()
                 logger.info("Packet Capture Engine initialized and started successfully.")
             except Exception as exc:
-                logger.error("Failed to start Packet Capture Engine", error=str(exc))
+                logger.warning(
+                    "Packet Capture Engine unavailable (Npcap driver missing or interface permission restriction). Running in system telemetry mode.",
+                    error=str(exc),
+                )
 
         # 5. Start Flow Generation Engine (if enabled)
         if agent_settings.FLOW_ENABLED and agent_settings.CAPTURE_ENABLED:
@@ -77,7 +84,7 @@ class AgentLifecycleManager:
                 await self.flow_engine.start()
                 logger.info("Flow Generation Engine initialized and started successfully.")
             except Exception as exc:
-                logger.error("Failed to start Flow Generation Engine", error=str(exc))
+                logger.warning("Flow Generation Engine not active", error=str(exc))
 
         # 6. Start Advanced Feature Extraction Engine (if enabled)
         if agent_settings.FEATURE_EXTRACTION_ENABLED and agent_settings.FLOW_ENABLED and agent_settings.CAPTURE_ENABLED:
@@ -86,7 +93,7 @@ class AgentLifecycleManager:
                 await self.feature_engine.start()
                 logger.info("Feature Extraction Engine initialized and started successfully.")
             except Exception as exc:
-                logger.error("Failed to start Feature Extraction Engine", error=str(exc))
+                logger.warning("Feature Extraction Engine not active", error=str(exc))
 
         # 7. Start Hybrid Intrusion Detection Engine (if enabled)
         if (
@@ -100,7 +107,7 @@ class AgentLifecycleManager:
                 await self.detection_engine.start()
                 logger.info("Hybrid Intrusion Detection Engine initialized and started successfully.")
             except Exception as exc:
-                logger.error("Failed to start Hybrid Intrusion Detection Engine", error=str(exc))
+                logger.warning("Hybrid Intrusion Detection Engine not active", error=str(exc))
 
         # 8. Start Risk Engine & Alert Management System (if enabled)
         if (
@@ -116,34 +123,94 @@ class AgentLifecycleManager:
                 await self.risk_engine.start()
                 logger.info("Risk Engine and Alert Management System initialized and started successfully.")
             except Exception as exc:
-                logger.error("Failed to start Risk Engine and Alert Management System", error=str(exc))
+                logger.warning("Risk Engine not active", error=str(exc))
 
         # 9. Start persistent WebSocket Client
         await self.ws_client.start()
 
         logger.info("PRISM Agent daemon successfully initialized and running.")
 
-    async def _register_with_server(self) -> None:
-        """Register agent with PRISM Server and save issued credentials."""
-        static_info = SystemCollector.collect_static_info()
+    async def _resilient_registration_flow(self) -> bool:
+        """Attempt registration with automatic interactive prompt or background retry loop."""
+        attempts = 0
+        max_quick_attempts = 2
+
+        while attempts < max_quick_attempts:
+            attempts += 1
+            try:
+                static_info = SystemCollector.collect_static_info()
+                response = await self.http_client.post("/api/v1/agents/register", json_data=static_info)
+                agent_id = response.get("agent_id")
+                secret_key = response.get("secret_key")
+
+                if agent_id and secret_key:
+                    self.credentials_store.save_credentials(agent_id, secret_key)
+                    self.http_client.set_credentials(agent_id, secret_key)
+                    agent_state.agent_id = agent_id
+                    agent_state.is_registered = True
+                    agent_state.is_authenticated = True
+                    logger.info("Agent registered successfully with PRISM Server", agent_id=agent_id)
+                    return True
+            except Exception as exc:
+                logger.warning(
+                    "Registration attempt failed",
+                    attempt=attempts,
+                    server_url=agent_settings.SERVER_URL,
+                    error=str(exc),
+                )
+                await asyncio.sleep(1.0)
+
+        # If interactive console is available, prompt user for Server URL
+        if sys.stdin and sys.stdin.isatty():
+            new_url = self._prompt_user_for_server_url()
+            if new_url:
+                agent_settings.update_server_url(new_url)
+                logger.info("Updated Central Server URL", new_url=agent_settings.SERVER_URL)
+                return await self._resilient_registration_flow()
+
+        # Otherwise launch background reconnect task to keep retrying periodically
+        asyncio.create_task(self._background_registration_retry_loop())
+        return False
+
+    def _prompt_user_for_server_url(self) -> Optional[str]:
+        """Prompt user interactively for Central Admin Server URL on connection failure."""
+        print("\n" + "=" * 68)
+        print("🌐 PRISM Central Admin Server Connection Setup")
+        print("=" * 68)
+        print(f"Could not connect to PRISM Server at '{agent_settings.SERVER_URL}'.")
+        print("Please enter the Central Admin Server URL (IP or Domain):")
+        print("Example: http://192.168.1.50:8000 or http://prism-server:8000")
+        print("-" * 68)
         try:
-            response = await self.http_client.post("/api/v1/agents/register", json_data=static_info)
-            agent_id = response.get("agent_id")
-            secret_key = response.get("secret_key")
+            user_input = input("Central Server URL: ").strip()
+            if user_input:
+                return user_input
+        except Exception:
+            pass
+        return None
 
-            if not agent_id or not secret_key:
-                raise RuntimeError("Invalid registration response payload from server")
+    async def _background_registration_retry_loop(self) -> None:
+        """Periodically retry registration in background without crashing the daemon."""
+        retry_delay = 10.0
+        while not agent_state.is_registered:
+            await asyncio.sleep(retry_delay)
+            try:
+                static_info = SystemCollector.collect_static_info()
+                response = await self.http_client.post("/api/v1/agents/register", json_data=static_info)
+                agent_id = response.get("agent_id")
+                secret_key = response.get("secret_key")
 
-            self.credentials_store.save_credentials(agent_id, secret_key)
-            self.http_client.set_credentials(agent_id, secret_key)
-            agent_state.agent_id = agent_id
-            agent_state.is_registered = True
-            agent_state.is_authenticated = True
-
-            logger.info("Agent registered successfully with PRISM Server", agent_id=agent_id)
-        except Exception as exc:
-            logger.critical("Agent registration failed", error=str(exc))
-            raise
+                if agent_id and secret_key:
+                    self.credentials_store.save_credentials(agent_id, secret_key)
+                    self.http_client.set_credentials(agent_id, secret_key)
+                    agent_state.agent_id = agent_id
+                    agent_state.is_registered = True
+                    agent_state.is_authenticated = True
+                    logger.info("Background registration succeeded!", agent_id=agent_id)
+                    break
+            except Exception as exc:
+                logger.debug("Background registration retry pending...", error=str(exc))
+                retry_delay = min(60.0, retry_delay * 1.5)
 
     async def shutdown(self) -> None:
         """Clean shutdown of daemon services, risk engine, detection engine, feature engine, flow engine, and packet capture."""

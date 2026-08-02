@@ -68,7 +68,7 @@ TIMEZONE="UTC"
 
     print(f"[*] Updated .env.agent with SERVER_URL=\"{central_server_url}\"")
 
-    # Base PyInstaller Command with Multithreading & Hidden Imports Optimization
+    # Base PyInstaller Command bundling rules, models, and .env.agent into executable
     cmd = [
         sys.executable,
         "-m",
@@ -78,6 +78,7 @@ TIMEZONE="UTC"
         "--clean",
         "--add-data=rules;rules",
         "--add-data=models;models",
+        "--add-data=.env.agent;.",
         "--hidden-import=concurrent.futures",
         "--hidden-import=asyncio",
         "--hidden-import=scapy.all",
@@ -102,7 +103,11 @@ TIMEZONE="UTC"
         print(f"   👉 {dist_exe}")
         print(f"   🎯 Pre-configured Central Server URL: {central_server_url}")
         print("=========================================================")
-        print("Copy 'prism-agent.exe' and '.env.agent' to ANY computer. It will connect back to your system automatically!")
+        print("You can copy 'prism-agent.exe' to ANY Windows computer.")
+        print("Usage on target PCs:")
+        print(f"  • Double-click or run:  prism-agent.exe")
+        print(f"  • Specify Server URL:   prism-agent.exe --server-url http://{central_ip}:8000")
+        print("=========================================================")
     else:
         print("❌ Build failed. Please check compiler output above.")
 

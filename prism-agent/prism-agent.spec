@@ -5,7 +5,7 @@ a = Analysis(
     ['agent\\main.py'],
     pathex=[],
     binaries=[],
-    datas=[('rules', 'rules'), ('models', 'models')],
+    datas=[('rules', 'rules'), ('models', 'models'), ('.env.agent', '.')],
     hiddenimports=['concurrent.futures', 'asyncio', 'scapy.all', 'scapy.layers.all', 'scapy.layers.inet', 'scapy.layers.l2', 'sklearn.ensemble._forest', 'joblib', 'structlog', 'pydantic', 'psutil'],
     hookspath=[],
     hooksconfig={},

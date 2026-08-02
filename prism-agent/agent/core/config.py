@@ -1,30 +1,80 @@
-"""Agent Pydantic Settings Configuration."""
+"""Agent Pydantic Settings Configuration with Multi-Source & Portable Path Support."""
 
-from typing import Optional
+import json
+import os
+import sys
+from typing import Any, Dict, Optional
 from pydantic import Field, ValidationInfo, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from agent.core.paths import get_exe_dir, get_resource_path, get_writable_path
+
+
+def load_local_json_config() -> Dict[str, Any]:
+    """Load configuration overrides from prism_agent_config.json if present."""
+    config_file = get_resource_path("prism_agent_config.json")
+    if os.path.exists(config_file):
+        try:
+            with open(config_file, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {}
+
+
+def parse_cli_server_url() -> Optional[str]:
+    """Parse --server-url or -s argument from sys.argv."""
+    args = sys.argv[1:]
+    for i, arg in enumerate(args):
+        if arg in ("--server-url", "-s", "--server") and i + 1 < len(args):
+            return args[i + 1]
+        if arg.startswith("--server-url="):
+            return arg.split("=", 1)[1]
+        if arg.startswith("--server="):
+            return arg.split("=", 1)[1]
+    return None
+
+
+local_json_overrides = load_local_json_config()
+cli_server_url = parse_cli_server_url()
+env_server_url = os.getenv("PRISM_SERVER_URL") or os.getenv("SERVER_URL")
 
 
 class AgentSettings(BaseSettings):
     """Core settings for PRISM IDS agent daemon."""
 
     model_config = SettingsConfigDict(
-        env_file=".env.agent",
+        env_file=get_resource_path(".env.agent"),
         env_file_encoding="utf-8",
         case_sensitive=True,
         extra="ignore",
     )
 
     # Central Server Connection Configuration
-    SERVER_URL: str = Field(default="http://localhost:8000", description="PRISM Central Server HTTP base URL")
+    SERVER_URL: str = Field(
+        default=cli_server_url
+        or env_server_url
+        or local_json_overrides.get("SERVER_URL")
+        or "http://localhost:8000",
+        description="PRISM Central Server HTTP base URL",
+    )
     WS_URL: Optional[str] = Field(default=None, description="PRISM Central Server WebSocket URL")
+
+    @field_validator("SERVER_URL", mode="before")
+    def clean_server_url(cls, v: Any) -> str:
+        """Format and validate server URL string."""
+        if not v or not isinstance(v, str):
+            return "http://localhost:8000"
+        url = v.strip().rstrip("/")
+        if not url.startswith("http://") and not url.startswith("https://"):
+            url = f"http://{url}"
+        return url
 
     @field_validator("WS_URL", mode="before")
     def assemble_ws_url(cls, v: Optional[str], info: ValidationInfo) -> str:
         """Dynamically derive WebSocket URL from SERVER_URL if not explicitly configured."""
         if isinstance(v, str) and v.strip():
             return v
-        server_url = info.data.get("SERVER_URL", "http://localhost:8000")
+        server_url = info.data.get("SERVER_URL") or "http://localhost:8000"
         clean_url = server_url.rstrip("/")
         if clean_url.startswith("https://"):
             base_ws = clean_url.replace("https://", "wss://")
@@ -40,7 +90,7 @@ class AgentSettings(BaseSettings):
 
     # Local Credentials Storage
     CREDENTIALS_FILE: str = Field(
-        default=".agent_credentials.json", description="Local path for storing credentials"
+        default=get_writable_path(".agent_credentials.json"), description="Local path for storing credentials"
     )
 
     # Operational Parameters
@@ -77,8 +127,12 @@ class AgentSettings(BaseSettings):
     DETECTION_ENABLED: bool = Field(default=True, description="Enable hybrid intrusion detection engine")
     SIGNATURE_ENGINE_ENABLED: bool = Field(default=True, description="Enable signature-based rule engine")
     ML_ENGINE_ENABLED: bool = Field(default=True, description="Enable machine learning detection engine")
-    MODEL_PATH: str = Field(default="models/prism_ids_rf.joblib", description="Path to pre-trained ML model file")
-    RULE_FILE_PATH: str = Field(default="rules/signature_rules.json", description="Path to signature rules JSON file")
+    MODEL_PATH: str = Field(
+        default=get_resource_path("models/prism_ids_rf.joblib"), description="Path to pre-trained ML model file"
+    )
+    RULE_FILE_PATH: str = Field(
+        default=get_resource_path("rules/signature_rules.json"), description="Path to signature rules JSON file"
+    )
     CONFIDENCE_THRESHOLD: float = Field(default=0.5, description="Minimum confidence threshold for valid detection")
     ML_PREDICTION_THRESHOLD: float = Field(default=0.6, description="ML malicious probability threshold")
     DETECTION_QUEUE_MAX_SIZE: int = Field(default=10000, description="Maximum detection results in output queue")
@@ -98,9 +152,32 @@ class AgentSettings(BaseSettings):
     # Logging & Environment
     LOG_LEVEL: str = Field(default="INFO", description="Log level (DEBUG, INFO, WARNING, ERROR)")
     LOG_FORMAT: str = Field(default="json", description="Log format (json or console)")
-    LOG_DIR: str = Field(default="logs", description="Local log directory")
+    LOG_DIR: str = Field(default=get_writable_path("logs"), description="Local log directory")
     DEBUG: bool = Field(default=True, description="Enable debug logging")
     TIMEZONE: str = Field(default="UTC", description="Default timezone")
+
+    def update_server_url(self, new_url: str) -> None:
+        """Update active server URL dynamically and persist to local config."""
+        clean_url = new_url.strip().rstrip("/")
+        if not clean_url.startswith("http://") and not clean_url.startswith("https://"):
+            clean_url = f"http://{clean_url}"
+        
+        self.SERVER_URL = clean_url
+        clean_base = clean_url.replace("https://", "wss://").replace("http://", "ws://")
+        self.WS_URL = f"{clean_base}/ws/v1/connect"
+
+        # Save to prism_agent_config.json
+        config_path = get_writable_path("prism_agent_config.json")
+        try:
+            cfg = {}
+            if os.path.exists(config_path):
+                with open(config_path, "r", encoding="utf-8") as f:
+                    cfg = json.load(f)
+            cfg["SERVER_URL"] = clean_url
+            with open(config_path, "w", encoding="utf-8") as f:
+                json.dump(cfg, f, indent=2)
+        except Exception:
+            pass
 
 
 agent_settings = AgentSettings()
