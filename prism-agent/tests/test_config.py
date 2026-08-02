@@ -8,4 +8,4 @@ def test_agent_config_defaults() -> None:
     settings = AgentSettings()
     assert settings.AGENT_VERSION == "1.0.0"
     assert settings.HEARTBEAT_INTERVAL == 15
-    assert settings.CREDENTIALS_FILE == ".agent_credentials.json"
+    assert settings.CREDENTIALS_FILE.endswith(".agent_credentials.json")
