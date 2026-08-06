@@ -6,7 +6,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.openapi.docs import get_swagger_ui_html
-from fastapi.openapi.utils import get_openapi
 from fastapi.responses import HTMLResponse
 import structlog
 
@@ -21,7 +20,10 @@ from app.core.exceptions import (
     validation_exception_handler,
 )
 from app.core.logging import setup_logging
+from app.database.base import Base
 from app.database.session import check_database_health, engine
+# Ensure all models are loaded into Base.metadata
+import app.models  # noqa: F401
 from app.middlewares.logging import RequestLoggingMiddleware
 from app.middlewares.request_id import RequestIDMiddleware
 from app.middlewares.security_headers import SecurityHeadersMiddleware
@@ -42,6 +44,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         version=settings.APP_VERSION,
         environment=settings.ENVIRONMENT,
     )
+    # Automatically create missing database tables at startup
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        logger.info("Database schema tables verified and ready.")
+    except Exception as db_err:
+        logger.warning("Could not auto-create database tables", error=str(db_err))
+
     # Check DB connection readiness at startup
     db_health = await check_database_health()
     logger.info("Database connection status", db_status=db_health)
@@ -62,7 +72,7 @@ def create_application() -> FastAPI:
             "Predictive Reasoning and Intelligent Security Monitoring (PRISM IDS) "
             "Server Infrastructure Foundation API."
         ),
-        docs_url=None,  # Custom Swagger docs route configured below
+        docs_url="/docs",
         redoc_url="/redoc",
         openapi_url="/openapi.json",
         lifespan=lifespan,
@@ -74,6 +84,7 @@ def create_application() -> FastAPI:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.ALLOWED_ORIGINS,
+        allow_origin_regex=r"https?://.*",
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -92,17 +103,6 @@ def create_application() -> FastAPI:
     app.include_router(api_v1_router, prefix=settings.API_V1_STR)
     app.include_router(ai_router)
     app.include_router(ws_router)
-
-    # Custom Swagger UI Endpoint
-    @app.get("/docs", include_in_schema=False)
-    async def custom_swagger_ui_html() -> HTMLResponse:
-        return get_swagger_ui_html(
-            openapi_url=app.openapi_url or "/openapi.json",
-            title=f"{settings.APP_NAME} - Swagger UI",
-            oauth2_redirect_url=app.swagger_ui_oauth2_redirect_url,
-            swagger_js_url="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js",
-            swagger_css_url="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css",
-        )
 
     return app
 

@@ -2,7 +2,14 @@ import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { useAlertStore } from '../../stores/alertStore';
 
-const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8000/ws/v1/connect';
+const getWsUrl = () => {
+  if (import.meta.env.VITE_WS_URL) {
+    return import.meta.env.VITE_WS_URL;
+  }
+  const host = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+  const scheme = typeof window !== 'undefined' && window.location.protocol === 'https:' ? 'wss' : 'ws';
+  return `${scheme}://${host}:8000/ws/v1/connect`;
+};
 
 export function useWebSocket() {
   const [isConnected, setIsConnected] = useState(false);
@@ -10,6 +17,7 @@ export function useWebSocket() {
   const addLiveAlert = useAlertStore((state) => state.addLiveAlert);
 
   useEffect(() => {
+    const WS_URL = getWsUrl();
     const token = localStorage.getItem('prism_token');
     const connectUrl = token ? `${WS_URL}?token=${token}` : WS_URL;
 
@@ -44,17 +52,17 @@ export function useWebSocket() {
       }
     };
 
+    ws.onerror = (error) => {
+      console.error('WebSocket Error:', error);
+      setIsConnected(false);
+    };
+
     ws.onclose = () => {
       setIsConnected(false);
     };
 
-    ws.onerror = (err) => {
-      console.error('WebSocket Error:', err);
-      setIsConnected(false);
-    };
-
     return () => {
-      if (ws.readyState === WebSocket.OPEN) {
+      if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
         ws.close();
       }
     };

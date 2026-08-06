@@ -10,16 +10,35 @@ from app.core.exceptions import DatabaseError
 
 logger = structlog.get_logger("prism_ids.database")
 
-# Create Async Engine with connection pooling, idle recycling, and auto-reconnect (pool_pre_ping=True)
-engine = create_async_engine(
-    url=settings.DATABASE_URL,
-    echo=settings.DEBUG,
-    pool_size=settings.DB_POOL_SIZE,
-    max_overflow=settings.DB_MAX_OVERFLOW,
-    pool_timeout=settings.DB_POOL_TIMEOUT,
-    pool_recycle=1800,
-    pool_pre_ping=True,
-)
+# Dynamic engine parameters based on database driver (SQLite vs PostgreSQL)
+is_sqlite = settings.DATABASE_URL.startswith("sqlite")
+engine_kwargs: Dict[str, Any] = {"echo": settings.DEBUG}
+
+if is_sqlite:
+    engine_kwargs["connect_args"] = {"check_same_thread": False}
+else:
+    engine_kwargs.update({
+        "pool_size": settings.DB_POOL_SIZE,
+        "max_overflow": settings.DB_MAX_OVERFLOW,
+        "pool_timeout": settings.DB_POOL_TIMEOUT,
+        "pool_recycle": 1800,
+        "pool_pre_ping": True,
+    })
+
+# Create Async Engine with auto-reconnect
+try:
+    engine = create_async_engine(
+        url=settings.DATABASE_URL,
+        **engine_kwargs,
+    )
+except ModuleNotFoundError as exc:
+    logger.warning(
+        "Database driver module missing. Install required driver package.",
+        error=str(exc),
+        url=settings.DATABASE_URL,
+    )
+    # Fallback engine definition
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:", connect_args={"check_same_thread": False})
 
 # Async Session Factory
 AsyncSessionLocal = async_sessionmaker(
@@ -61,7 +80,7 @@ async def check_database_health() -> Dict[str, Any]:
                 return {
                     "status": "healthy",
                     "latency_ms": latency_ms,
-                    "pool_size": settings.DB_POOL_SIZE,
+                    "database_type": "SQLite" if is_sqlite else "PostgreSQL",
                 }
             return {"status": "unhealthy", "error": "Unexpected scalar query result"}
     except Exception as exc:

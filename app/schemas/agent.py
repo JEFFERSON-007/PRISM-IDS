@@ -9,11 +9,13 @@ from pydantic import BaseModel, ConfigDict, Field
 class AgentRegisterRequest(BaseModel):
     """Payload submitted by a new monitoring agent during onboarding."""
 
-    agent_name: str = Field(min_length=3, max_length=100, pattern=r"^[a-zA-Z0-9_\-]+$")
-    hostname: str = Field(min_length=1, max_length=255)
-    ip_address: str = Field(min_length=7, max_length=45, description="IPv4 or IPv6 address")
-    operating_system: str = Field(min_length=1, max_length=100)
-    version: str = Field(min_length=1, max_length=50)
+    model_config = ConfigDict(extra="ignore")
+
+    agent_name: str = Field(default="agent-node", min_length=1, max_length=100)
+    hostname: str = Field(default="localhost", min_length=1, max_length=255)
+    ip_address: Optional[str] = Field(default="127.0.0.1")
+    operating_system: Optional[str] = Field(default="Windows")
+    version: Optional[str] = Field(default="1.0.0")
 
 
 class AgentRegisterResponse(BaseModel):
@@ -27,6 +29,8 @@ class AgentRegisterResponse(BaseModel):
 
 class AgentUpdateRequest(BaseModel):
     """Payload to update agent parameters."""
+
+    model_config = ConfigDict(extra="ignore")
 
     ip_address: Optional[str] = None
     version: Optional[str] = None

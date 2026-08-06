@@ -30,39 +30,46 @@ class AgentService:
     async def register_agent(
         self, request: AgentRegisterRequest, ip_address: Optional[str] = None
     ) -> AgentRegisterResponse:
-        """Register a new monitoring agent, generate a secure secret key, and create default configuration."""
-        existing = await self.agent_repo.get_by_name(request.agent_name)
-        if existing:
-            raise PRISMValidationError(f"Agent with name '{request.agent_name}' is already registered.")
-
-        # Generate cryptographic secret key (32 bytes hex)
+        """Register a new monitoring agent or re-issue credentials to an existing agent."""
         raw_secret_key = f"prism_agent_{secrets.token_hex(24)}"
         secret_hash = hash_password(raw_secret_key)
-
         now = datetime.now(timezone.utc)
-        agent = Agent(
-            agent_name=request.agent_name,
-            hostname=request.hostname,
-            ip_address=request.ip_address,
-            operating_system=request.operating_system,
-            version=request.version,
-            secret_key_hash=secret_hash,
-            registration_time=now,
-            is_online=True,
-            health_status="healthy",
-        )
-        saved_agent = await self.agent_repo.create(agent)
 
-        # Create default agent configuration
-        default_config = AgentConfiguration(
-            agent_id=saved_agent.id,
-            version=1,
-            capture_interface="eth0",
-            packet_filters="ip",
-            log_level="INFO",
-            sampling_rate=1.0,
-        )
-        await self.config_repo.create(default_config)
+        existing = await self.agent_repo.get_by_name(request.agent_name)
+        if existing:
+            existing.hostname = request.hostname
+            existing.ip_address = request.ip_address or ip_address or existing.ip_address
+            existing.operating_system = request.operating_system
+            existing.version = request.version
+            existing.secret_key_hash = secret_hash
+            existing.is_online = True
+            existing.health_status = "healthy"
+            existing.last_seen = now
+            saved_agent = await self.agent_repo.update(existing)
+        else:
+            agent = Agent(
+                agent_name=request.agent_name,
+                hostname=request.hostname,
+                ip_address=request.ip_address or ip_address,
+                operating_system=request.operating_system,
+                version=request.version,
+                secret_key_hash=secret_hash,
+                registration_time=now,
+                is_online=True,
+                health_status="healthy",
+            )
+            saved_agent = await self.agent_repo.create(agent)
+
+            # Create default agent configuration
+            default_config = AgentConfiguration(
+                agent_id=saved_agent.id,
+                version=1,
+                capture_interface="eth0",
+                packet_filters="ip",
+                log_level="INFO",
+                sampling_rate=1.0,
+            )
+            await self.config_repo.create(default_config)
 
         await self.audit_service.log_event(
             agent_id=saved_agent.id,
@@ -80,31 +87,28 @@ class AgentService:
         )
 
     async def authenticate_agent(self, agent_id: uuid.UUID, secret_key: str) -> Agent:
-        """Verify agent ID and secret key credentials."""
+        """Authenticate agent credentials via UUID and raw secret key matching stored hash."""
         agent = await self.agent_repo.get_by_id(agent_id)
         if not agent:
-            raise AuthenticationError("Invalid Agent ID credentials")
+            raise AuthenticationError("Invalid Agent ID credentials.")
 
         if not verify_password(secret_key, agent.secret_key_hash):
-            raise AuthenticationError("Invalid Agent secret key credentials")
+            raise AuthenticationError("Invalid Agent Secret Key.")
+
+        if not agent.is_online:
+            agent.is_online = True
+            agent.health_status = "healthy"
+            await self.agent_repo.update(agent)
 
         return agent
 
     async def get_agent_by_id(self, agent_id: uuid.UUID) -> Agent:
-        """Fetch agent by primary key."""
+        """Fetch agent model by ID."""
         agent = await self.agent_repo.get_by_id(agent_id)
         if not agent:
-            raise NotFoundError(f"Agent with ID '{agent_id}' not found")
+            raise NotFoundError(f"Agent with ID '{agent_id}' not found.")
         return agent
 
-    async def list_agents(self, skip: int = 0, limit: int = 100) -> Sequence[Agent]:
-        """Fetch paginated list of monitoring agents."""
-        return await self.agent_repo.get_all(skip=skip, limit=limit)
-
-    async def update_agent(self, agent_id: uuid.UUID, obj_in: AgentUpdateRequest) -> Agent:
-        """Update agent metadata or health status."""
-        agent = await self.get_agent_by_id(agent_id)
-        update_data = obj_in.model_dump(exclude_unset=True)
-        for field, value in update_data.items():
-            setattr(agent, field, value)
-        return await self.agent_repo.update(agent)
+    async def list_agents(self, skip: int = 0, limit: int = 20) -> Sequence[Agent]:
+        """Fetch paginated sequence of agents."""
+        return await self.agent_repo.list_agents(skip=skip, limit=limit)

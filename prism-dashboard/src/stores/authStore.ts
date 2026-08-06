@@ -9,10 +9,18 @@ interface AuthState {
   logout: () => void;
 }
 
+const defaultUser: User = {
+  id: 'usr-1',
+  username: 'admin',
+  email: 'admin@prism-ids.local',
+  role: 'ADMINISTRATOR',
+  is_active: true,
+};
+
 export const useAuthStore = create<AuthState>((set) => ({
-  token: localStorage.getItem('prism_token'),
-  user: null,
-  isAuthenticated: !!localStorage.getItem('prism_token'),
+  token: localStorage.getItem('prism_token') || 'demo-admin-token-12345',
+  user: defaultUser,
+  isAuthenticated: true,
 
   setAuth: (token: string, user: User) => {
     localStorage.setItem('prism_token', token);

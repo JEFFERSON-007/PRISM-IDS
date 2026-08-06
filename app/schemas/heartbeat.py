@@ -1,6 +1,7 @@
 """Heartbeat Submission Schemas."""
 
 from datetime import datetime
+from typing import Optional
 import uuid
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -8,12 +9,14 @@ from pydantic import BaseModel, ConfigDict, Field
 class HeartbeatCreate(BaseModel):
     """Heartbeat payload sent periodically by active monitoring agents."""
 
+    model_config = ConfigDict(extra="ignore")
+
     timestamp: datetime = Field(description="Agent local timestamp")
     cpu_usage: float = Field(ge=0.0, le=100.0, description="CPU usage percentage")
     ram_usage: float = Field(ge=0.0, le=100.0, description="RAM usage percentage")
     disk_usage: float = Field(ge=0.0, le=100.0, description="Disk usage percentage")
-    network_status: str = Field(default="ok", max_length=50)
-    agent_version: str = Field(min_length=1, max_length=50)
+    network_status: Optional[str] = Field(default="ok", max_length=50)
+    agent_version: Optional[str] = Field(default="1.0.0", max_length=50)
 
 
 class HeartbeatResponse(BaseModel):
