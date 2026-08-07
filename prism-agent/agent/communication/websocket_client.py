@@ -23,7 +23,7 @@ class AgentWebSocketClient:
     @property
     def ws_url(self) -> str:
         """Dynamic WebSocket URL evaluating active server settings."""
-        return self._custom_ws_url or agent_settings.WS_URL or "ws://localhost:8000/ws/v1/connect"
+        return self._custom_ws_url or agent_settings.WS_URL or "ws://127.0.0.1:8000/ws/v1/connect"
 
     def set_message_handler(self, handler: Callable[[Dict[str, Any]], None]) -> None:
         """Register a callback for incoming server WebSocket messages."""

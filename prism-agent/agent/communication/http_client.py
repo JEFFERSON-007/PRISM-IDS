@@ -58,7 +58,7 @@ class AgentHTTPClient:
         backoff = 1.0
         for attempt in range(1, retries + 1):
             try:
-                async with httpx.AsyncClient(timeout=agent_settings.HTTP_TIMEOUT) as client:
+                async with httpx.AsyncClient(trust_env=False, timeout=agent_settings.HTTP_TIMEOUT) as client:
                     response = await client.request(
                         method=method,
                         url=url,

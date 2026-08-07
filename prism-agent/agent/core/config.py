@@ -54,7 +54,7 @@ class AgentSettings(BaseSettings):
         default=cli_server_url
         or env_server_url
         or local_json_overrides.get("SERVER_URL")
-        or "http://localhost:8000",
+        or "http://127.0.0.1:8000",
         description="PRISM Central Server HTTP base URL",
     )
     WS_URL: Optional[str] = Field(default=None, description="PRISM Central Server WebSocket URL")
