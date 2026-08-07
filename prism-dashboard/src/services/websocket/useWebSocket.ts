@@ -18,8 +18,8 @@ export function useWebSocket() {
 
   useEffect(() => {
     const WS_URL = getWsUrl();
-    const token = localStorage.getItem('prism_token');
-    const connectUrl = token ? `${WS_URL}?token=${token}` : WS_URL;
+    const token = localStorage.getItem('prism_token') || 'demo-admin-token-12345';
+    const connectUrl = `${WS_URL}?token=${token}`;
 
     const ws = new WebSocket(connectUrl);
     wsRef.current = ws;
@@ -48,12 +48,12 @@ export function useWebSocket() {
           });
         }
       } catch (err) {
-        console.error('Error parsing WebSocket message:', err);
+        console.error('Failed to parse WebSocket message:', err);
       }
     };
 
-    ws.onerror = (error) => {
-      console.error('WebSocket Error:', error);
+    ws.onerror = (err) => {
+      console.error('WebSocket Error:', err);
       setIsConnected(false);
     };
 

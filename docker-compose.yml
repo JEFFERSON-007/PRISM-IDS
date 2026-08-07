@@ -47,18 +47,5 @@ services:
     depends_on:
       - server
 
-  agent:
-    build:
-      context: ./prism-agent
-      dockerfile: Dockerfile
-    container_name: prism-agent
-    restart: always
-    network_mode: "host"
-    cap_add:
-      - NET_ADMIN
-      - NET_RAW
-    environment:
-      - SERVER_URL=http://localhost:8000
-
 volumes:
   pgdata:

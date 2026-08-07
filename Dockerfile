@@ -10,9 +10,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy dependency manifest & install
-COPY pyproject.toml .
+COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir fastapi uvicorn sqlalchemy asyncpg alembic pydantic structlog python-jose passlib httpx psutil jinja2 pytest
+    pip install --no-cache-dir -r requirements.txt
 
 # Copy source code
 COPY app/ ./app
