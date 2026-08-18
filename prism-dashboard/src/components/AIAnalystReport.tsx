@@ -120,14 +120,14 @@ export const AIAnalystReport: React.FC<AIAnalystReportProps> = ({ alertId }) => 
                   <div className="flex justify-between items-start mb-1">
                     <span className="font-semibold text-emerald-300 text-sm">{action.title}</span>
                     <span className={`text-[10px] px-1.5 py-0.5 rounded border ${
-                      action.priority === 'HIGH' ? 'bg-red-500/10 border-red-500/30 text-red-400' :
-                      action.priority === 'CRITICAL' ? 'bg-red-500/20 border-red-500/50 text-red-300' :
+                      action.priority <= 1 ? 'bg-red-500/20 border-red-500/50 text-red-300' :
+                      action.priority === 2 ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' :
                       'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
                     }`}>
-                      {action.priority} PRIORITY
+                      P{action.priority} — {action.action_type}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-400">{action.description}</p>
+                  <p className="text-xs text-slate-400">{action.details}</p>
                 </div>
               ))}
               {(!report.remediation_actions || report.remediation_actions.length === 0) && (

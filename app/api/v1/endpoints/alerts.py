@@ -6,7 +6,7 @@ import uuid
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 import structlog
-from app.api.dependencies import get_authenticated_agent, get_current_user, get_db
+from app.api.dependencies import get_authenticated_agent, get_current_user, get_db, get_optional_agent
 from app.models.agent import Agent
 from app.models.user import User
 from app.schemas.alert import AlertCreate, AlertPaginationResponse, AlertRead
@@ -21,11 +21,11 @@ async def ingest_alert(
     alert_in: AlertCreate,
     x_agent_id: Optional[str] = Header(None, alias="X-Agent-ID"),
     db: AsyncSession = Depends(get_db),
-    agent: Optional[Agent] = Depends(get_authenticated_agent),
+    agent: Optional[Agent] = Depends(get_optional_agent),
 ) -> AlertRead:
     """Ingest security alert from PRISM IDS Agent node."""
     service = AlertService(db)
-    agent_id_str = agent.agent_id if agent else x_agent_id
+    agent_id_str = str(agent.id) if agent else x_agent_id
     alert_read = await service.ingest_alert(alert_in, header_agent_id=agent_id_str)
     return alert_read
 

@@ -30,7 +30,7 @@ class AlertService:
 
         if target_agent_str:
             try:
-                agent = await self.agent_repo.get_by_agent_id(target_agent_str)
+                agent = await self.agent_repo.get_by_id(target_agent_str)
                 if agent:
                     agent_db_id = agent.id
             except Exception as exc:

@@ -40,9 +40,9 @@ class LLMAnalysisResponse(BaseModel):
     trigger_rationale: str = Field(description="Why the Hybrid Detection Engine triggered this alert")
     risk_assessment: str = Field(description="Assessment of business and infrastructure risk")
     likely_impact: str = Field(description="Potential consequences if unmitigated")
-    false_positive_indicators: List[str] = Field(default_list=[], description="Indicators suggesting a possible false positive")
-    mitre_attack_mapping: List[MitreAttackMapping] = Field(default_list=[], description="Suggested MITRE ATT&CK mappings")
-    remediation_actions: List[RemediationAction] = Field(default_list=[], description="Prioritized mitigation steps")
+    false_positive_indicators: List[str] = Field(default_factory=list, description="Indicators suggesting a possible false positive")
+    mitre_attack_mapping: List[MitreAttackMapping] = Field(default_factory=list, description="Suggested MITRE ATT&CK mappings")
+    remediation_actions: List[RemediationAction] = Field(default_factory=list, description="Prioritized mitigation steps")
     generated_by_model: str = Field(description="LLM model identifier or fallback generator")
 
 
@@ -70,4 +70,4 @@ class LLMHealthResponse(BaseModel):
     ollama_url: str
     configured_model: str
     ollama_online: bool
-    available_models: List[str] = Field(default_list=[])
+    available_models: List[str] = Field(default_factory=list)

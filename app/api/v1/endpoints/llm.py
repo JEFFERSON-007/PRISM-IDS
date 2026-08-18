@@ -8,23 +8,23 @@ from app.api.dependencies import get_current_user, get_db
 from app.llm.chat_service import ChatService
 from app.llm.llm_service import LLMService
 from app.models.user import User
+from app.schemas.ai import AIHealthResponse
 from app.schemas.llm import (
     AlertAnalysisRequest,
     ChatMessageRequest,
     ChatMessageResponse,
     LLMAnalysisResponse,
-    LLMHealthResponse,
 )
 
 router = APIRouter(prefix="/llm", tags=["AI Security Analyst"])
 logger = structlog.get_logger("prism_ids.llm_api")
 
 
-@router.get("/health", response_model=LLMHealthResponse)
+@router.get("/health", response_model=AIHealthResponse)
 async def check_llm_health(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
-) -> LLMHealthResponse:
+) -> AIHealthResponse:
     """Check Ollama API service status and model availability (Requires JWT Auth)."""
     service = LLMService(db)
     return await service.get_health()
@@ -69,6 +69,7 @@ async def get_executive_summary(
     brief = await service.analyze_alert()
     return {
         "summary": brief.executive_summary,
-        "critical_recommendations": [r.title for r in brief.remediation_actions],
+        "critical_recommendations": brief.remediation_actions,
         "model_used": brief.generated_by_model,
     }
+

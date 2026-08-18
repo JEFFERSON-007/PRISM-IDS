@@ -230,3 +230,18 @@ async def get_authenticated_agent(
         raise AuthenticationError("Invalid X-Agent-ID header format")
 
     return await agent_service.authenticate_agent(agent_uuid, x_agent_secret)
+
+async def get_optional_agent(
+    x_agent_id: Optional[str] = Header(None, alias="X-Agent-ID"),
+    x_agent_secret: Optional[str] = Header(None, alias="X-Agent-Secret"),
+    agent_service: AgentService = Depends(get_agent_service),
+) -> Optional[Agent]:
+    """Dependency attempting to authenticate an agent, returning None if missing headers or invalid credentials."""
+    if not x_agent_id or not x_agent_secret:
+        return None
+    try:
+        agent_uuid = uuid.UUID(x_agent_id)
+        return await agent_service.authenticate_agent(agent_uuid, x_agent_secret)
+    except Exception:
+        return None
+

@@ -155,14 +155,14 @@ export interface MitreMapping {
   technique_id: string;
   technique_name: string;
   tactic: string;
+  description?: string;
 }
 
 export interface RemediationAction {
+  priority: number;
+  action_type: string;
   title: string;
-  description: string;
-  priority: string;
-  effort_level: string;
-  impact_level: string;
+  details: string;
 }
 
 export interface LLMAnalysisResponse {
