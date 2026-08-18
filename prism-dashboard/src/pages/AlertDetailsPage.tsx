@@ -4,6 +4,7 @@ import { ArrowLeft, Clock, Code, Cpu, Database, Network, ShieldAlert } from 'luc
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { alertsApi } from '../services/api/apiClient';
 import { Alert } from '../types/types';
+import { AIAnalystReport } from '../components/AIAnalystReport';
 
 export const AlertDetailsPage: React.FC = () => {
   const { alertId } = useParams<{ alertId: string }>();
@@ -175,6 +176,9 @@ export const AlertDetailsPage: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Autonomous AI Threat Analyst Briefing */}
+      <AIAnalystReport alertId={alertId || alert.alert_id} />
 
       {/* Raw Evidence Summary JSON */}
       <div className="glass-panel p-5 rounded-xl border border-slate-800">

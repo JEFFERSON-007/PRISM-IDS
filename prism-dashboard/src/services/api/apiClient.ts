@@ -8,6 +8,7 @@ import {
   IncidentPaginationResponse,
   SystemHealth,
   User,
+  LLMAnalysisResponse,
 } from '../../types/types';
 
 const getApiBaseUrl = () => {
@@ -125,3 +126,12 @@ export const agentsApi = {
     return response.data;
   },
 };
+
+// AI Security Analyst API calls
+export const llmApi = {
+  analyzeAlert: async (alertId: string) => {
+    const response = await apiClient.post<LLMAnalysisResponse>('/api/v1/llm/analyze', { alert_id: alertId });
+    return response.data;
+  },
+};
+

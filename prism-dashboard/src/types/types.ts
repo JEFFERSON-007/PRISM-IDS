@@ -150,3 +150,31 @@ export interface User {
   role: string;
   is_active: boolean;
 }
+
+export interface MitreMapping {
+  technique_id: string;
+  technique_name: string;
+  tactic: string;
+}
+
+export interface RemediationAction {
+  title: string;
+  description: string;
+  priority: string;
+  effort_level: string;
+  impact_level: string;
+}
+
+export interface LLMAnalysisResponse {
+  alert_id: string;
+  timestamp: string;
+  executive_summary: string;
+  technical_explanation: string;
+  trigger_rationale: string;
+  risk_assessment: string;
+  likely_impact: string;
+  false_positive_indicators: string[];
+  mitre_attack_mapping: MitreMapping[];
+  remediation_actions: RemediationAction[];
+  generated_by_model: string;
+}
