@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🛡️ PRISM IDS
+#  PRISM IDS
 ### **Predictive Reasoning & Intelligent Security Monitoring**
 
 [![CI/CD Pipeline](https://github.com/JEFFERSON-007/PRISM-IDS/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/JEFFERSON-007/PRISM-IDS/actions)
@@ -21,38 +21,38 @@
 
 ---
 
-## 👁️ System Overview
+##  System Overview
 
 **PRISM IDS** is a high-performance cyber threat detection platform engineered for modern enterprise environments. It combines raw packet acquisition, canonical 5-tuple flow generation, 24-dimensional feature extraction, dual signature & Scikit-Learn Random Forest Machine Learning detection, normalized risk scoring ($0-100$), and automated threat deduplication into a unified security operations platform.
 
 ---
 
-## 👨‍💻 USER-END GUIDE (Windows App Installation)
+##  USER-END GUIDE (Windows App Installation)
 
 The **User End App** (`prism-agent.exe`) is a zero-configuration, standalone Windows executable installed on target computers, employee laptops, or servers that you want to monitor.
 
-### 📥 1-Click Direct Download (Single Executable)
-- **`prism-agent.exe`**: [👉 Download Standalone Executable (70 MB GitHub Direct Link)](https://github.com/JEFFERSON-007/PRISM-IDS/raw/main/prism-agent/dist/prism-agent.exe)
+###  1-Click Direct Download (Single Executable)
+- **`prism-agent.exe`**: [ Download Standalone Executable (70 MB GitHub Direct Link)](https://github.com/JEFFERSON-007/PRISM-IDS/raw/main/prism-agent/dist/prism-agent.exe)
 
-> ✨ **Zero Extra Files Required**: `prism-agent.exe` comes pre-configured out-of-the-box with embedded Python runtime, Scapy drivers, machine learning models, and pre-configured Central Server connectivity!
+>  **Zero Extra Files Required**: `prism-agent.exe` comes pre-configured out-of-the-box with embedded Python runtime, Scapy drivers, machine learning models, and pre-configured Central Server connectivity!
 
 ---
 
-### 🚀 2. Step-by-Step Windows Installation Guide
+###  2. Step-by-Step Windows Installation Guide
 
 1. **Download Executable**:
    Download **`prism-agent.exe`** onto the target Windows computer.
 
 2. **Launch as Administrator**:
    Right-click **`prism-agent.exe`** and select **"Run as Administrator"**.
-   > ⚠️ **Why Administrator Rights are Required**: Windows packet sniffing drivers (Scapy / Npcap) require elevated privileges to access raw network interface cards.
+   >  **Why Administrator Rights are Required**: Windows packet sniffing drivers (Scapy / Npcap) require elevated privileges to access raw network interface cards.
 
 3. **Automatic Pairing & Protection**:
    The agent will automatically read the target computer's unique hostname (e.g. `DESKTOP-FINANCE`), register with your Central Admin Server, and begin monitoring immediately.
 
 ---
 
-### ⚙️ 3. Optional Advanced Configuration (`.env.agent`)
+###  3. Optional Advanced Configuration (`.env.agent`)
 
 Downloading `.env.agent` is **100% OPTIONAL**. Power users can optionally create an `.env.agent` file alongside `prism-agent.exe` to override default parameters manually:
 
@@ -70,7 +70,7 @@ RECONNECT_INTERVAL=5
 
 ---
 
-### 🔁 4. Run Automatically at Windows Startup (Optional)
+###  4. Run Automatically at Windows Startup (Optional)
 
 To ensure `prism-agent.exe` starts automatically every time the Windows PC boots up:
 
@@ -88,7 +88,7 @@ To ensure `prism-agent.exe` starts automatically every time the Windows PC boots
 
 ---
 
-## 👑 ADMIN-END GUIDE (Central SOC Master)
+##  ADMIN-END GUIDE (Central SOC Master)
 
 The **Admin End** hosts the central database, central API server, Ollama AI Security Analyst, and Master SOC Dashboard.
 
@@ -111,11 +111,11 @@ docker-compose up --build -d
 
 ---
 
-## 🤖 AI SECURITY ANALYST: HOW IT WORKS & WHAT'S ITS USE
+##  AI SECURITY ANALYST: HOW IT WORKS & WHAT'S ITS USE
 
 The **AI Security Analyst** is powered by a local Large Language Model (**Ollama `qwen2.5:3b`**) integrated directly into the PRISM Central Server (`app/llm/`).
 
-### 💡 Why is the AI Used? (Purpose & Business Impact)
+###  Why is the AI Used? (Purpose & Business Impact)
 Raw Intrusion Detection System logs consist of complex numerical data: TCP flag ratios, BPF bytecode, packet rate variances, and Shannon entropy values ($H(X)$). Interpreting these numbers usually requires senior Level-3 cybersecurity specialists. 
 
 The AI Security Analyst acts as an **always-on Level-3 SOC Security Analyst**:
@@ -126,7 +126,7 @@ The AI Security Analyst acts as an **always-on Level-3 SOC Security Analyst**:
 
 ---
 
-## 🏗️ System Architecture
+##  System Architecture
 
 ```
                   +-------------------------------------------------------------+
@@ -163,7 +163,7 @@ The AI Security Analyst acts as an **always-on Level-3 SOC Security Analyst**:
 
 ---
 
-## ⚡ Getting Started & Deployment
+##  Getting Started & Deployment
 
 ### System Prerequisites
 - **Git**: [git-scm.com](https://git-scm.com/)
@@ -174,7 +174,7 @@ The AI Security Analyst acts as an **always-on Level-3 SOC Security Analyst**:
 
 ---
 
-### 🐳 Method 1: Containerized Run (Docker Compose - Recommended for Any OS)
+### Method 1: Containerized Run (Docker Compose - Recommended for Any OS)
 
 This method runs PostgreSQL 16, FastAPI Backend, React SOC Dashboard, and Scapy Agent in Docker containers with a single command.
 
@@ -197,11 +197,11 @@ docker-compose up --build -d
 
 ---
 
-## 📦 Standalone Windows `.exe` Agent Build
+##  Standalone Windows `.exe` Agent Build
 
 You can bundle the sensor agent into a **single 34 MB standalone Windows `.exe` file** (`prism-agent.exe`) that requires **NO Python or Git installation** on target systems!
 
-### ⚙️ How to Build `prism-agent.exe`:
+###  How to Build `prism-agent.exe`:
 ```bash
 cd prism-agent
 python build_exe.py
@@ -209,7 +209,7 @@ python build_exe.py
 
 ---
 
-## 🔧 Troubleshooting & FAQ
+##  Troubleshooting & FAQ
 
 | Issue / Error | Root Cause | Solution |
 | :--- | :--- | :--- |
@@ -221,7 +221,7 @@ python build_exe.py
 
 ---
 
-## 📜 License
+##  License
 
 PRISM IDS is licensed under the **[MIT License](LICENSE)**.
 
